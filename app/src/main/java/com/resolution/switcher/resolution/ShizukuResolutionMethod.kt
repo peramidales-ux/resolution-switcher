@@ -3,8 +3,24 @@ package com.resolution.switcher.resolution
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
+import java.lang.reflect.Method
 
 class ShizukuResolutionMethod : ResolutionController {
+
+    private var newProcessMethod: Method? = null
+
+    init {
+        try {
+            newProcessMethod = Shizuku::class.java.getDeclaredMethod(
+                "newProcess",
+                Array<String>::class.java,
+                Array<String>::class.java,
+                String::class.java
+            )
+            newProcessMethod?.isAccessible = true
+        } catch (_: Exception) {
+        }
+    }
 
     override suspend fun setResolution(width: Int, height: Int): Boolean = withContext(Dispatchers.IO) {
         executeCommand("wm size ${width}x${height}")
@@ -26,9 +42,13 @@ class ShizukuResolutionMethod : ResolutionController {
 
     private fun executeCommand(command: String): Boolean {
         return try {
-            val service = Shizuku.peekService() ?: return false
-            val process = service.newProcess(arrayOf("sh", "-c", command), null, null)
-            process.waitFor() == 0
+            val process = newProcessMethod?.invoke(
+                null,
+                arrayOf("sh", "-c", command),
+                null,
+                null
+            ) as? Process
+            process?.waitFor() == 0
         } catch (_: Exception) {
             false
         }
@@ -36,10 +56,14 @@ class ShizukuResolutionMethod : ResolutionController {
 
     private fun executeCommandWithOutput(command: String): String? {
         return try {
-            val service = Shizuku.peekService() ?: return null
-            val process = service.newProcess(arrayOf("sh", "-c", command), null, null)
-            val output = process.inputStream.bufferedReader().readText()
-            process.waitFor()
+            val process = newProcessMethod?.invoke(
+                null,
+                arrayOf("sh", "-c", command),
+                null,
+                null
+            ) as? Process
+            val output = process?.inputStream?.bufferedReader()?.readText()
+            process?.waitFor()
             output
         } catch (_: Exception) {
             null
