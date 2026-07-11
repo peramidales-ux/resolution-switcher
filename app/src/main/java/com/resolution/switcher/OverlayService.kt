@@ -77,14 +77,14 @@ class OverlayService : Service() {
             presetStorage = PresetStorage(this)
             resolutionController = ResolutionController.create(this)
 
-            createNotificationChannel()
-            startForeground(NOTIFICATION_ID, createNotification())
-
+            // Show overlay directly (no foreground service needed for now)
             loadNativeResolution()
             showOverlay()
-            Toast.makeText(this, "Resolution Switcher запущен", Toast.LENGTH_SHORT).show()
+
+            Toast.makeText(this, "Оверлей запущен!", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Toast.makeText(this, "Ошибка сервиса: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
+            e.printStackTrace()
             stopSelf()
         }
     }
@@ -131,15 +131,22 @@ class OverlayService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        return Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle(getString(R.string.service_notification_title))
-            .setContentText(getString(R.string.service_notification_text))
+        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, CHANNEL_ID)
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(this)
+        }
+
+        return builder
+            .setContentTitle("Resolution Switcher")
+            .setContentText("Нажмите для управления")
             .setSmallIcon(android.R.drawable.ic_menu_manage)
             .setContentIntent(openPendingIntent)
             .addAction(
                 Notification.Action.Builder(
                     null,
-                    getString(R.string.close_overlay),
+                    "Закрыть",
                     closePendingIntent
                 ).build()
             )
@@ -153,6 +160,7 @@ class OverlayService : Service() {
                 nativeWidth = w
                 nativeHeight = h
                 computeRanges()
+                overlayView?.post { updateNativeResText() }
             } ?: run {
                 nativeWidth = 1080
                 nativeHeight = 2400
@@ -177,7 +185,6 @@ class OverlayService : Service() {
             setupOverlayListeners(overlayView!!)
             updateNativeResText()
 
-            // Load current resolution
             serviceScope.launch {
                 resolutionController?.getCurrentResolution()?.let { (w, h) ->
                     overlayView?.post {
@@ -188,6 +195,7 @@ class OverlayService : Service() {
             }
         } catch (e: Exception) {
             Toast.makeText(this, "Ошибка оверлея: ${e.message}", Toast.LENGTH_LONG).show()
+            e.printStackTrace()
         }
     }
 
@@ -202,7 +210,7 @@ class OverlayService : Service() {
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             x = 20
-            y = 100
+            y = 200
         }
         view.tag = params
         windowManager.addView(view, params)
@@ -210,7 +218,6 @@ class OverlayService : Service() {
 
     private fun setupOverlayListeners(view: View) {
         val header = view.findViewById<LinearLayout>(R.id.header)
-        val content = view.findViewById<LinearLayout>(R.id.content)
         val btnCollapse = view.findViewById<ImageButton>(R.id.btnCollapse)
         val seekWidth = view.findViewById<SeekBar>(R.id.seekWidth)
         val seekHeight = view.findViewById<SeekBar>(R.id.seekHeight)
@@ -220,15 +227,10 @@ class OverlayService : Service() {
         val btnSavePreset = view.findViewById<Button>(R.id.btnSavePreset)
         val chipGroup = view.findViewById<ChipGroup>(R.id.chipGroupPresets)
 
-        // Drag handling
         setupDrag(header, view)
 
-        // Collapse
-        btnCollapse.setOnClickListener {
-            collapseOverlay()
-        }
+        btnCollapse.setOnClickListener { collapseOverlay() }
 
-        // Width SeekBar
         seekWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
@@ -241,7 +243,6 @@ class OverlayService : Service() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // Height SeekBar
         seekHeight.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
@@ -254,7 +255,6 @@ class OverlayService : Service() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // Width EditText
         etWidth.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -267,7 +267,6 @@ class OverlayService : Service() {
             }
         })
 
-        // Height EditText
         etHeight.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -280,7 +279,6 @@ class OverlayService : Service() {
             }
         })
 
-        // Reset button
         btnReset.setOnClickListener {
             serviceScope.launch {
                 resolutionController?.resetResolution()
@@ -291,12 +289,7 @@ class OverlayService : Service() {
             }
         }
 
-        // Save preset
-        btnSavePreset.setOnClickListener {
-            showSavePresetDialog()
-        }
-
-        // Load presets
+        btnSavePreset.setOnClickListener { showSavePresetDialog() }
         loadPresets(chipGroup)
     }
 
@@ -347,15 +340,13 @@ class OverlayService : Service() {
         handler.postDelayed(pendingHeightRunnable!!, DEBOUNCE_MS)
     }
 
-    private fun getCurrentWidth(): Int {
-        return overlayView?.findViewById<EditText>(R.id.etWidth)
+    private fun getCurrentWidth(): Int =
+        overlayView?.findViewById<EditText>(R.id.etWidth)
             ?.text?.toString()?.toIntOrNull() ?: nativeWidth
-    }
 
-    private fun getCurrentHeight(): Int {
-        return overlayView?.findViewById<EditText>(R.id.etHeight)
+    private fun getCurrentHeight(): Int =
+        overlayView?.findViewById<EditText>(R.id.etHeight)
             ?.text?.toString()?.toIntOrNull() ?: nativeHeight
-    }
 
     private fun setWidthValue(value: Int) {
         overlayView?.let { view ->
@@ -373,9 +364,8 @@ class OverlayService : Service() {
         }
     }
 
-    private fun progressToValue(progress: Int, min: Int, max: Int): Int {
-        return min + ((max - min) * progress / 100)
-    }
+    private fun progressToValue(progress: Int, min: Int, max: Int): Int =
+        min + ((max - min) * progress / 100)
 
     private fun valueToProgress(value: Int, min: Int, max: Int): Int {
         if (max == min) return 0
@@ -384,7 +374,7 @@ class OverlayService : Service() {
 
     private fun updateNativeResText() {
         overlayView?.findViewById<TextView>(R.id.tvNativeRes)?.text =
-            getString(R.string.native_resolution, nativeWidth, nativeHeight)
+            "Заводское: ${nativeWidth}x${nativeHeight}"
     }
 
     private fun collapseOverlay() {
@@ -412,12 +402,11 @@ class OverlayService : Service() {
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             x = 20
-            y = 100
+            y = 200
         }
 
         collapsedView?.tag = params
         collapsedView?.setOnClickListener { expandOverlay() }
-
         setupDragCollapsed(collapsedView!!, params)
         windowManager.addView(collapsedView, params)
     }
@@ -449,9 +438,7 @@ class OverlayService : Service() {
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (!moved) {
-                        expandOverlay()
-                    }
+                    if (!moved) expandOverlay()
                     true
                 }
                 else -> false
@@ -478,10 +465,10 @@ class OverlayService : Service() {
         val height = getCurrentHeight()
 
         val builder = android.app.AlertDialog.Builder(this, R.style.Theme_ResolutionSwitcher)
-        builder.setTitle(R.string.save_preset)
+        builder.setTitle("Сохранить пресет")
 
         val input = EditText(this).apply {
-            hint = getString(R.string.preset_name_hint)
+            hint = "Название пресета"
             setPadding(48, 32, 48, 16)
         }
         builder.setView(input)

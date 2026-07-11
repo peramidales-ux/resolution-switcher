@@ -137,8 +137,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startOverlayService() {
-        val intent = Intent(this, OverlayService::class.java)
-        startForegroundService(intent)
-        finish()
+        try {
+            val intent = Intent(this, OverlayService::class.java)
+            startService(intent)
+            Toast.makeText(this, "Запускаю оверлей...", Toast.LENGTH_SHORT).show()
+            // Don't finish() immediately - let service start
+            finish()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Ошибка запуска: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 }

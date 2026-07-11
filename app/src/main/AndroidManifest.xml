@@ -26,11 +26,7 @@
         <service
             android:name=".OverlayService"
             android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="display_overlay" />
-        </service>
+            android:stopWithTask="false" />
 
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
