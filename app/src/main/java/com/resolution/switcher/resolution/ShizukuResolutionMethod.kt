@@ -26,7 +26,8 @@ class ShizukuResolutionMethod : ResolutionController {
 
     private fun executeCommand(command: String): Boolean {
         return try {
-            val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+            val service = Shizuku.peekService() ?: return false
+            val process = service.newProcess(arrayOf("sh", "-c", command), null, null)
             process.waitFor() == 0
         } catch (_: Exception) {
             false
@@ -35,7 +36,8 @@ class ShizukuResolutionMethod : ResolutionController {
 
     private fun executeCommandWithOutput(command: String): String? {
         return try {
-            val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+            val service = Shizuku.peekService() ?: return null
+            val process = service.newProcess(arrayOf("sh", "-c", command), null, null)
             val output = process.inputStream.bufferedReader().readText()
             process.waitFor()
             output
