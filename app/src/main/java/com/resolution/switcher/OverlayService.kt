@@ -71,19 +71,30 @@ class OverlayService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        presetStorage = PresetStorage(this)
-        resolutionController = ResolutionController.create(this)
+        try {
+            windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+            notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            presetStorage = PresetStorage(this)
+            resolutionController = ResolutionController.create(this)
 
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
+            createNotificationChannel()
+            startForeground(NOTIFICATION_ID, createNotification())
 
-        loadNativeResolution()
-        showOverlay()
+            loadNativeResolution()
+            showOverlay()
+            Toast.makeText(this, "Resolution Switcher запущен", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Ошибка сервиса: ${e.message}", Toast.LENGTH_LONG).show()
+            stopSelf()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == "CLOSE") {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return START_NOT_STICKY
+        }
         return START_STICKY
     }
 
@@ -158,27 +169,31 @@ class OverlayService : Service() {
     }
 
     private fun showOverlay() {
-        val inflater = LayoutInflater.from(this)
-        overlayView = inflater.inflate(R.layout.overlay_panel, null)
+        try {
+            val inflater = LayoutInflater.from(this)
+            overlayView = inflater.inflate(R.layout.overlay_panel, null)
 
-        setupOverlayWindow(overlayView!!)
-        setupOverlayListeners(overlayView!!)
-        updateNativeResText()
+            setupOverlayWindow(overlayView!!)
+            setupOverlayListeners(overlayView!!)
+            updateNativeResText()
 
-        // Load current resolution
-        serviceScope.launch {
-            resolutionController?.getCurrentResolution()?.let { (w, h) ->
-                overlayView?.post {
-                    setWidthValue(w)
-                    setHeightValue(h)
+            // Load current resolution
+            serviceScope.launch {
+                resolutionController?.getCurrentResolution()?.let { (w, h) ->
+                    overlayView?.post {
+                        setWidthValue(w)
+                        setHeightValue(h)
+                    }
                 }
             }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Ошибка оверлея: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
     private fun setupOverlayWindow(view: View) {
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            320,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
