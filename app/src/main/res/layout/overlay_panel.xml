@@ -12,365 +12,353 @@
         android:layout_gravity="center"
         android:orientation="vertical"
         android:background="@drawable/overlay_bg_rounded"
-        android:padding="0dp"
         android:elevation="12dp">
 
-    <!-- Header (draggable) -->
-    <LinearLayout
-        android:id="@+id/header"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="@drawable/header_bg_rounded"
-        android:paddingStart="14dp"
-        android:paddingEnd="4dp">
-
-        <ImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/ic_tiger_logo"
-            android:scaleType="fitCenter"
-            android:layout_marginEnd="10dp" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="LAENFAER"
-            android:textColor="#FFFFFFFF"
-            android:fontFamily="sans-serif-black"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.05" />
-
-        <ImageButton
-            android:id="@+id/btnHide"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_hide"
-            android:contentDescription="Скрыть"
-            android:scaleType="centerInside" />
-
-        <ImageButton
-            android:id="@+id/btnCollapse"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_collapse"
-            android:contentDescription="Свернуть"
-            android:scaleType="centerInside" />
-    </LinearLayout>
-
-    <!-- Content -->
-    <LinearLayout
-        android:id="@+id/content"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <!-- Native resolution info -->
-        <TextView
-            android:id="@+id/tvNativeRes"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#AAFFFFFF"
-            android:textSize="12sp"
-            android:layout_marginBottom="12dp" />
-
-        <!-- Aspect Ratio Quick Select -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="СООТНОШЕНИЕ СТОРОН"
-            android:textColor="#88FFFFFF"
-            android:textSize="10sp"
-            android:letterSpacing="0.12"
-            android:layout_marginBottom="8dp" />
-
+        <!-- Header -->
         <LinearLayout
+            android:id="@+id/header"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
-
-            <TextView
-                android:id="@+id/btnAR_16_9"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="4dp"
-                android:text="16:9"
-                android:textColor="#FFFFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:background="@drawable/ar_button_bg"
-                android:clickable="true"
-                android:focusable="true" />
-
-            <TextView
-                android:id="@+id/btnAR_16_10"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
-                android:text="16:10"
-                android:textColor="#FFFFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:background="@drawable/ar_button_bg"
-                android:clickable="true"
-                android:focusable="true" />
-
-            <TextView
-                android:id="@+id/btnAR_4_3"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                android:text="4:3"
-                android:textColor="#FFFFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:background="@drawable/ar_button_bg"
-                android:clickable="true"
-                android:focusable="true" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="14dp">
-
-            <TextView
-                android:id="@+id/btnAR_21_9"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="4dp"
-                android:text="21:9"
-                android:textColor="#FFFFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:background="@drawable/ar_button_bg"
-                android:clickable="true"
-                android:focusable="true" />
-
-            <TextView
-                android:id="@+id/btnAR_1_1"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
-                android:text="1:1"
-                android:textColor="#FFFFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:background="@drawable/ar_button_bg"
-                android:clickable="true"
-                android:focusable="true" />
-
-            <TextView
-                android:id="@+id/btnAR_NATIVE"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                android:text="СБРОС"
-                android:textColor="#FF03DAC5"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:background="@drawable/ar_button_reset_bg"
-                android:clickable="true"
-                android:focusable="true" />
-        </LinearLayout>
-
-        <!-- Width -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ШИРИНА"
-            android:textColor="#88FFFFFF"
-            android:textSize="10sp"
-            android:letterSpacing="0.12" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginTop="6dp">
+            android:background="@drawable/header_bg_rounded"
+            android:paddingStart="14dp"
+            android:paddingEnd="4dp">
 
-            <SeekBar
-                android:id="@+id/seekWidth"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:max="100"
-                android:progressTint="#FFFF6D00"
-                android:thumbTint="#FFFF6D00" />
-
-            <EditText
-                android:id="@+id/etWidth"
-                android:layout_width="80dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="10dp"
-                android:background="@drawable/edit_bg_rounded"
-                android:textColor="#FFFFFFFF"
-                android:textColorHint="#55FFFFFF"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:inputType="number"
-                android:gravity="center"
-                android:padding="4dp"
-                android:hint="1080" />
-        </LinearLayout>
-
-        <!-- Height -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ВЫСОТА"
-            android:textColor="#88FFFFFF"
-            android:textSize="10sp"
-            android:letterSpacing="0.12"
-            android:layout_marginTop="14dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="6dp">
-
-            <SeekBar
-                android:id="@+id/seekHeight"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:max="100"
-                android:progressTint="#FFFF6D00"
-                android:thumbTint="#FFFF6D00" />
-
-            <EditText
-                android:id="@+id/etHeight"
-                android:layout_width="80dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="10dp"
-                android:background="@drawable/edit_bg_rounded"
-                android:textColor="#FFFFFFFF"
-                android:textColorHint="#55FFFFFF"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:inputType="number"
-                android:gravity="center"
-                android:padding="4dp"
-                android:hint="2400" />
-        </LinearLayout>
-
-        <!-- Transparency -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ПРОЗРАЧНОСТЬ"
-            android:textColor="#88FFFFFF"
-            android:textSize="10sp"
-            android:letterSpacing="0.12"
-            android:layout_marginTop="16dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="6dp">
-
-            <SeekBar
-                android:id="@+id/seekTransparency"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:max="100"
-                android:progress="75"
-                android:progressTint="#FF03DAC5"
-                android:thumbTint="#FF03DAC5" />
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_tiger_logo"
+                android:scaleType="fitCenter"
+                android:layout_marginEnd="10dp" />
 
             <TextView
-                android:id="@+id/tvTransparency"
-                android:layout_width="44dp"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="75%"
-                android:textColor="#FF03DAC5"
-                android:textSize="13sp"
+                android:layout_weight="1"
+                android:text="LAENFAER"
+                android:textColor="#FFFFFFFF"
+                android:fontFamily="sans-serif-black"
+                android:textSize="15sp"
                 android:textStyle="bold"
-                android:gravity="center" />
+                android:letterSpacing="0.05" />
+
+            <ImageButton
+                android:id="@+id/btnHide"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_hide"
+                android:contentDescription="Скрыть"
+                android:scaleType="centerInside" />
+
+            <ImageButton
+                android:id="@+id/btnCollapse"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_collapse"
+                android:contentDescription="Свернуть"
+                android:scaleType="centerInside" />
         </LinearLayout>
 
-        <!-- Buttons row -->
+        <!-- Content -->
         <LinearLayout
+            android:id="@+id/content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="16dp">
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <Button
-                android:id="@+id/btnReset"
-                android:layout_width="0dp"
-                android:layout_height="44dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="6dp"
-                android:text="СБРОС"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textAllCaps="false"
-                android:background="@drawable/btn_reset_bg" />
-
-            <Button
-                android:id="@+id/btnSavePreset"
-                android:layout_width="0dp"
-                android:layout_height="44dp"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                android:text="СОХРАНИТЬ"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textAllCaps="false"
-                android:background="@drawable/btn_save_bg" />
-        </LinearLayout>
-
-        <!-- Presets -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ПРЕСЕТЫ"
-            android:textColor="#88FFFFFF"
-            android:textSize="10sp"
-            android:letterSpacing="0.12"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp" />
-
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:scrollbars="none">
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chipGroupPresets"
+            <TextView
+                android:id="@+id/tvNativeRes"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </HorizontalScrollView>
+                android:layout_height="wrap_content"
+                android:textColor="#AAFFFFFF"
+                android:textSize="12sp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Aspect Ratio -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="СООТНОШЕНИЕ СТОРОН"
+                android:textColor="#88FFFFFF"
+                android:textSize="10sp"
+                android:letterSpacing="0.12"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:id="@+id/btnAR_16_9"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="16:9"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:background="@drawable/ar_button_bg" />
+
+                <TextView
+                    android:id="@+id/btnAR_16_10"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:text="16:10"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:background="@drawable/ar_button_bg" />
+
+                <TextView
+                    android:id="@+id/btnAR_4_3"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="4:3"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:background="@drawable/ar_button_bg" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="14dp">
+
+                <TextView
+                    android:id="@+id/btnAR_21_9"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="21:9"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:background="@drawable/ar_button_bg" />
+
+                <TextView
+                    android:id="@+id/btnAR_1_1"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:text="1:1"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:background="@drawable/ar_button_bg" />
+
+                <TextView
+                    android:id="@+id/btnAR_NATIVE"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="СБРОС"
+                    android:textColor="#FF03DAC5"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:background="@drawable/ar_button_reset_bg" />
+            </LinearLayout>
+
+            <!-- Width -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ШИРИНА"
+                android:textColor="#88FFFFFF"
+                android:textSize="10sp"
+                android:letterSpacing="0.12" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="6dp">
+
+                <SeekBar
+                    android:id="@+id/seekWidth"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="100"
+                    android:progressTint="#FFFF6D00"
+                    android:thumbTint="#FFFF6D00" />
+
+                <EditText
+                    android:id="@+id/etWidth"
+                    android:layout_width="80dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/edit_bg_rounded"
+                    android:textColor="#FFFFFFFF"
+                    android:textColorHint="#55FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:inputType="number"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:hint="1080" />
+            </LinearLayout>
+
+            <!-- Height -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ВЫСОТА"
+                android:textColor="#88FFFFFF"
+                android:textSize="10sp"
+                android:letterSpacing="0.12"
+                android:layout_marginTop="14dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="6dp">
+
+                <SeekBar
+                    android:id="@+id/seekHeight"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="100"
+                    android:progressTint="#FFFF6D00"
+                    android:thumbTint="#FFFF6D00" />
+
+                <EditText
+                    android:id="@+id/etHeight"
+                    android:layout_width="80dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/edit_bg_rounded"
+                    android:textColor="#FFFFFFFF"
+                    android:textColorHint="#55FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:inputType="number"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:hint="2400" />
+            </LinearLayout>
+
+            <!-- Transparency -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ПРОЗРАЧНОСТЬ"
+                android:textColor="#88FFFFFF"
+                android:textSize="10sp"
+                android:letterSpacing="0.12"
+                android:layout_marginTop="16dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="6dp">
+
+                <SeekBar
+                    android:id="@+id/seekTransparency"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="100"
+                    android:progress="75"
+                    android:progressTint="#FF03DAC5"
+                    android:thumbTint="#FF03DAC5" />
+
+                <TextView
+                    android:id="@+id/tvTransparency"
+                    android:layout_width="44dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="75%"
+                    android:textColor="#FF03DAC5"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:gravity="center" />
+            </LinearLayout>
+
+            <!-- Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp">
+
+                <Button
+                    android:id="@+id/btnReset"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="СБРОС"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="false"
+                    android:background="@drawable/btn_reset_bg" />
+
+                <Button
+                    android:id="@+id/btnSavePreset"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="СОХРАНИТЬ"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="false"
+                    android:background="@drawable/btn_save_bg" />
+            </LinearLayout>
+
+            <!-- Presets -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ПРЕСЕТЫ"
+                android:textColor="#88FFFFFF"
+                android:textSize="10sp"
+                android:letterSpacing="0.12"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupPresets"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </HorizontalScrollView>
+
+        </LinearLayout>
 
     </LinearLayout>
 </FrameLayout>
