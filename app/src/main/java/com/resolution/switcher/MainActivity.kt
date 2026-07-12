@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -54,7 +55,11 @@ class MainActivity : AppCompatActivity() {
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         presetStorage = PresetStorage(this)
+
+        // Auto-detect access method if not set
+        PermissionHelper.hasAnyAccessMethod(this)
         resolutionController = ResolutionController.create(this)
+        Log.d("ResSwitcher", "Controller created: ${resolutionController != null}, method: ${PermissionHelper.getAccessMethod(this)}")
 
         val tvVersion = findViewById<TextView>(R.id.tvVersion)
         tvVersion.text = "v1.0.7"
@@ -72,6 +77,7 @@ class MainActivity : AppCompatActivity() {
         btnUseRoot.setOnClickListener {
             if (PermissionHelper.isRootAvailable()) {
                 PermissionHelper.setAccessMethod(this, "root")
+                resolutionController = ResolutionController.create(this)
                 Toast.makeText(this, "Root выбран", Toast.LENGTH_SHORT).show()
                 updateUI()
             }
@@ -91,6 +97,7 @@ class MainActivity : AppCompatActivity() {
             if (PermissionHelper.isShizukuAvailable()) {
                 if (PermissionHelper.isShizukuPermissionGranted()) {
                     PermissionHelper.setAccessMethod(this, "shizuku")
+                    resolutionController = ResolutionController.create(this)
                     Toast.makeText(this, "Shizuku выбран", Toast.LENGTH_SHORT).show()
                     updateUI()
                 } else {
@@ -379,7 +386,16 @@ class MainActivity : AppCompatActivity() {
     private fun debouncedSet(w: Int, h: Int) {
         pendingW?.let { handler.removeCallbacks(it) }
         pendingH?.let { handler.removeCallbacks(it) }
-        pendingW = Runnable { scope.launch { resolutionController?.setResolution(w, h) } }
+        pendingW = Runnable {
+            scope.launch {
+                Log.d("ResSwitcher", "Calling setResolution($w, $h), controller=${resolutionController != null}")
+                val result = resolutionController?.setResolution(w, h)
+                Log.d("ResSwitcher", "setResolution result: $result")
+                overlayView?.post {
+                    Toast.makeText(this@MainActivity, "Разрешение: $w x $h (${if (result == true) "OK" else "FAIL"})", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
         handler.postDelayed(pendingW!!, 200)
     }
 
