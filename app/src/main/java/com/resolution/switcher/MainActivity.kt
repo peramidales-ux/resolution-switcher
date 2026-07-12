@@ -192,6 +192,7 @@ class MainActivity : AppCompatActivity() {
         val header = panelContent.findViewById<LinearLayout>(R.id.header)
         val btnCollapse = panelContent.findViewById<ImageButton>(R.id.btnCollapse)
         val btnHide = panelContent.findViewById<ImageButton>(R.id.btnHide)
+        val btnClose = panelContent.findViewById<ImageButton>(R.id.btnClose)
         val seekWidth = panelContent.findViewById<SeekBar>(R.id.seekWidth)
         val seekHeight = panelContent.findViewById<SeekBar>(R.id.seekHeight)
         val etWidth = panelContent.findViewById<EditText>(R.id.etWidth)
@@ -203,12 +204,9 @@ class MainActivity : AppCompatActivity() {
         val chipGroup = panelContent.findViewById<ChipGroup>(R.id.chipGroupPresets)
 
         setupDrag(header, panelContent)
-
-        // Tap outside panel to close
-        view.setOnClickListener { hideOverlay() }
-        panelContent.setOnClickListener { /* consume click, don't close */ }
         btnCollapse.setOnClickListener { collapseOverlay() }
         btnHide.setOnClickListener { hideOverlay() }
+        btnClose.setOnClickListener { hideOverlay() }
 
         // Transparency
         seekTransparency.progress = (overlayAlpha * 100).toInt()
