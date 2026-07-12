@@ -161,16 +161,16 @@ class MainActivity : AppCompatActivity() {
         overlayView = inflater.inflate(R.layout.overlay_panel, null)
 
         val params = WindowManager.LayoutParams(
-            380,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = 20
-            y = 200
+            x = 0
+            y = 0
             alpha = overlayAlpha
         }
 
@@ -188,20 +188,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupOverlayListeners(view: View) {
-        val header = view.findViewById<LinearLayout>(R.id.header)
-        val btnCollapse = view.findViewById<ImageButton>(R.id.btnCollapse)
-        val btnHide = view.findViewById<ImageButton>(R.id.btnHide)
-        val seekWidth = view.findViewById<SeekBar>(R.id.seekWidth)
-        val seekHeight = view.findViewById<SeekBar>(R.id.seekHeight)
-        val etWidth = view.findViewById<EditText>(R.id.etWidth)
-        val etHeight = view.findViewById<EditText>(R.id.etHeight)
-        val seekTransparency = view.findViewById<SeekBar>(R.id.seekTransparency)
-        val tvTransparency = view.findViewById<TextView>(R.id.tvTransparency)
-        val btnReset = view.findViewById<Button>(R.id.btnReset)
-        val btnSavePreset = view.findViewById<Button>(R.id.btnSavePreset)
-        val chipGroup = view.findViewById<ChipGroup>(R.id.chipGroupPresets)
+        val panelContent = view.findViewById<LinearLayout>(R.id.panelContent)
+        val header = panelContent.findViewById<LinearLayout>(R.id.header)
+        val btnCollapse = panelContent.findViewById<ImageButton>(R.id.btnCollapse)
+        val btnHide = panelContent.findViewById<ImageButton>(R.id.btnHide)
+        val seekWidth = panelContent.findViewById<SeekBar>(R.id.seekWidth)
+        val seekHeight = panelContent.findViewById<SeekBar>(R.id.seekHeight)
+        val etWidth = panelContent.findViewById<EditText>(R.id.etWidth)
+        val etHeight = panelContent.findViewById<EditText>(R.id.etHeight)
+        val seekTransparency = panelContent.findViewById<SeekBar>(R.id.seekTransparency)
+        val tvTransparency = panelContent.findViewById<TextView>(R.id.tvTransparency)
+        val btnReset = panelContent.findViewById<Button>(R.id.btnReset)
+        val btnSavePreset = panelContent.findViewById<Button>(R.id.btnSavePreset)
+        val chipGroup = panelContent.findViewById<ChipGroup>(R.id.chipGroupPresets)
 
-        setupDrag(header, view)
+        setupDrag(header, panelContent)
+
+        // Tap outside panel to close
+        view.setOnClickListener { hideOverlay() }
+        panelContent.setOnClickListener { /* consume click, don't close */ }
         btnCollapse.setOnClickListener { collapseOverlay() }
         btnHide.setOnClickListener { hideOverlay() }
 
@@ -223,13 +228,14 @@ class MainActivity : AppCompatActivity() {
         })
 
         // Aspect ratio buttons
-        setupAspectRatioButton(view.findViewById(R.id.btnAR_16_9), 16, 9)
-        setupAspectRatioButton(view.findViewById(R.id.btnAR_16_10), 16, 10)
-        setupAspectRatioButton(view.findViewById(R.id.btnAR_4_3), 4, 3)
-        setupAspectRatioButton(view.findViewById(R.id.btnAR_21_9), 21, 9)
-        setupAspectRatioButton(view.findViewById(R.id.btnAR_1_1), 1, 1)
+        setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_16_9), 16, 9)
+        setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_16_10), 16, 10)
+        setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_4_3), 4, 3)
+        setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_21_9), 21, 9)
+        setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_1_1), 1, 1)
 
-        view.findViewById<TextView>(R.id.btnAR_NATIVE).setOnClickListener {
+        panelContent.findViewById<TextView>(R.id.btnAR_NATIVE).setOnClickListener {
+            preserveAspect = true
             setWidthValue(nativeWidth)
             setHeightValue(nativeHeight)
             debouncedSet(nativeWidth, nativeHeight)
@@ -237,7 +243,7 @@ class MainActivity : AppCompatActivity() {
 
         seekWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
-                if (fromUser) {
+                if (fromUser && !ignoreAspectChange) {
                     val width = progressToValue(p, minWidth, maxWidth)
                     etWidth.setText(width.toString())
                     debouncedSet(width, getCurrentHeight())
@@ -249,7 +255,7 @@ class MainActivity : AppCompatActivity() {
 
         seekHeight.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
-                if (fromUser) {
+                if (fromUser && !ignoreAspectChange) {
                     val height = progressToValue(p, minHeight, maxHeight)
                     etHeight.setText(height.toString())
                     debouncedSet(getCurrentWidth(), height)
@@ -263,6 +269,7 @@ class MainActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
             override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
             override fun afterTextChanged(s: Editable?) {
+                if (ignoreAspectChange) return
                 val v = s?.toString()?.toIntOrNull() ?: return
                 if (v in minWidth..maxWidth) {
                     seekWidth.progress = valueToProgress(v, minWidth, maxWidth)
@@ -275,6 +282,7 @@ class MainActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
             override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
             override fun afterTextChanged(s: Editable?) {
+                if (ignoreAspectChange) return
                 val v = s?.toString()?.toIntOrNull() ?: return
                 if (v in minHeight..maxHeight) {
                     seekHeight.progress = valueToProgress(v, minHeight, maxHeight)
@@ -284,6 +292,7 @@ class MainActivity : AppCompatActivity() {
         })
 
         btnReset.setOnClickListener {
+            preserveAspect = true
             scope.launch {
                 resolutionController?.resetResolution()
                 resolutionController?.resetDensity()
@@ -320,18 +329,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupAspectRatioButton(button: TextView, ratioW: Int, ratioH: Int) {
         button.setOnClickListener {
-            // Calculate resolution that fits native with given aspect ratio
+            preserveAspect = false
             val newW: Int
             val newH: Int
             val nativeRatio = nativeWidth.toFloat() / nativeHeight
             val targetRatio = ratioW.toFloat() / ratioH
 
             if (targetRatio > nativeRatio) {
-                // Wider than native - fit to width
                 newW = nativeWidth
                 newH = (nativeWidth * ratioH / ratioW)
             } else {
-                // Taller than native - fit to height
                 newH = nativeHeight
                 newW = (nativeHeight * ratioW / ratioH)
             }
@@ -365,16 +372,17 @@ class MainActivity : AppCompatActivity() {
         }
         overlayView = null
 
-        // Circular collapsed view with tiger logo — 80dp
+        // Huge circular collapsed view with tiger logo — 160dp
+        val size = 160
         val container = FrameLayout(this).apply {
-            layoutParams = FrameLayout.LayoutParams(80, 80)
+            layoutParams = FrameLayout.LayoutParams(size, size)
             background = getDrawable(R.drawable.collapsed_circle_bg)
         }
 
         val logo = ImageView(this).apply {
             setImageResource(R.drawable.ic_tiger_logo)
-            scaleType = ImageView.ScaleType.CENTER_CROP
-            layoutParams = FrameLayout.LayoutParams(80, 80).apply {
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            layoutParams = FrameLayout.LayoutParams(size, size).apply {
                 gravity = Gravity.CENTER
             }
         }
@@ -382,7 +390,7 @@ class MainActivity : AppCompatActivity() {
 
         collapsedView = container
 
-        val p = WindowManager.LayoutParams(80, 80,
+        val p = WindowManager.LayoutParams(size, size,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
@@ -475,17 +483,36 @@ class MainActivity : AppCompatActivity() {
 
     private var pendingW: Runnable? = null
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var preserveAspect = true
+    private var ignoreAspectChange = false
 
     private fun debouncedSet(w: Int, h: Int) {
         pendingW?.let { handler.removeCallbacks(it) }
+
+        // Preserve native aspect ratio to avoid black bars
+        val finalW: Int
+        val finalH: Int
+        if (preserveAspect && !ignoreAspectChange) {
+            val nativeRatio = nativeWidth.toFloat() / nativeHeight
+            finalW = w
+            finalH = (w / nativeRatio).toInt().coerceIn(minHeight, maxHeight)
+            // Update height UI without triggering recursive change
+            ignoreAspectChange = true
+            setHeightValue(finalH)
+            ignoreAspectChange = false
+        } else {
+            finalW = w
+            finalH = h
+        }
+
         pendingW = Runnable {
             scope.launch {
-                val scale = maxOf(w.toFloat() / nativeWidth, h.toFloat() / nativeHeight)
+                val scale = maxOf(finalW.toFloat() / nativeWidth, finalH.toFloat() / nativeHeight)
                 val newDpi = (nativeDensity * scale).toInt().coerceAtLeast(1)
-                val resOk = resolutionController?.setResolution(w, h)
+                val resOk = resolutionController?.setResolution(finalW, finalH)
                 val dpiOk = resolutionController?.setDensity(newDpi)
                 overlayView?.post {
-                    Toast.makeText(this@MainActivity, "${w}x${h} (${if (resOk == true && dpiOk == true) "OK" else "FAIL"})", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "${finalW}x${finalH} (${if (resOk == true && dpiOk == true) "OK" else "FAIL"})", Toast.LENGTH_SHORT).show()
                 }
             }
         }
