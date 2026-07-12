@@ -1,40 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/overlayRoot"
-    android:layout_width="300dp"
+    android:layout_width="320dp"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@color/overlay_bg"
+    android:background="@drawable/overlay_bg_rounded"
     android:padding="0dp"
-    android:elevation="8dp">
+    android:elevation="12dp">
 
     <!-- Header (draggable) -->
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="48dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:background="@color/overlay_header"
+        android:background="@drawable/header_bg_rounded"
         android:paddingStart="12dp"
         android:paddingEnd="4dp">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_tiger_logo"
+            android:scaleType="centerCrop"
+            android:layout_marginEnd="8dp" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/panel_title"
-            android:textColor="@color/on_primary"
+            android:text="LAENFAER"
+            android:textColor="#FFFFFFFF"
+            android:fontFamily="sans-serif-black"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:letterSpacing="0.05" />
+
+        <ImageButton
+            android:id="@+id/btnHide"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_hide"
+            android:contentDescription="Скрыть"
+            android:scaleType="centerInside" />
 
         <ImageButton
             android:id="@+id/btnCollapse"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_collapse"
-            android:contentDescription="@string/collapse"
+            android:contentDescription="Свернуть"
             android:scaleType="centerInside" />
     </LinearLayout>
 
@@ -44,25 +62,142 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="14dp">
 
         <!-- Native resolution info -->
         <TextView
             android:id="@+id/tvNativeRes"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/on_surface_variant"
+            android:textColor="#AAFFFFFF"
             android:textSize="11sp"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="10dp" />
+
+        <!-- Aspect Ratio Quick Select -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="СООТНОШЕНИЕ СТОРОН"
+            android:textColor="#AAFFFFFF"
+            android:textSize="10sp"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="6dp" />
+
+        <LinearLayout
+            android:id="@+id/aspectRatioGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:id="@+id/btnAR_16_9"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="16:9"
+                android:textColor="#FFFFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@drawable/ar_button_bg"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/btnAR_16_10"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:text="16:10"
+                android:textColor="#FFFFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@drawable/ar_button_bg"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/btnAR_4_3"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:text="4:3"
+                android:textColor="#FFFFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@drawable/ar_button_bg"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:id="@+id/btnAR_21_9"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="21:9"
+                android:textColor="#FFFFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@drawable/ar_button_bg"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/btnAR_1_1"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:text="1:1"
+                android:textColor="#FFFFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@drawable/ar_button_bg"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/btnAR_NATIVE"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:text="ОРИГИНАЛ"
+                android:textColor="#FF03DAC5"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@drawable/ar_button_reset_bg"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
 
         <!-- Width -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/width_label"
-            android:textColor="@color/on_surface"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:text="ШИРИНА"
+            android:textColor="#AAFFFFFF"
+            android:textSize="10sp"
+            android:letterSpacing="0.1" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -77,18 +212,19 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:max="100"
-                android:progressTint="@color/slider_thumb"
-                android:thumbTint="@color/slider_thumb" />
+                android:progressTint="#FFFF6D00"
+                android:thumbTint="#FFFF6D00" />
 
             <EditText
                 android:id="@+id/etWidth"
                 android:layout_width="72dp"
-                android:layout_height="36dp"
+                android:layout_height="34dp"
                 android:layout_marginStart="8dp"
-                android:background="@color/surface_variant"
-                android:textColor="@color/on_surface"
-                android:textColorHint="@color/on_surface_variant"
+                android:background="@drawable/edit_bg_rounded"
+                android:textColor="#FFFFFFFF"
+                android:textColorHint="#66FFFFFF"
                 android:textSize="13sp"
+                android:textStyle="bold"
                 android:inputType="number"
                 android:gravity="center"
                 android:padding="4dp"
@@ -99,11 +235,11 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/height_label"
-            android:textColor="@color/on_surface"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:layout_marginTop="12dp" />
+            android:text="ВЫСОТА"
+            android:textColor="#AAFFFFFF"
+            android:textSize="10sp"
+            android:letterSpacing="0.1"
+            android:layout_marginTop="10dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -118,43 +254,104 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:max="100"
-                android:progressTint="@color/slider_thumb"
-                android:thumbTint="@color/slider_thumb" />
+                android:progressTint="#FFFF6D00"
+                android:thumbTint="#FFFF6D00" />
 
             <EditText
                 android:id="@+id/etHeight"
                 android:layout_width="72dp"
-                android:layout_height="36dp"
+                android:layout_height="34dp"
                 android:layout_marginStart="8dp"
-                android:background="@color/surface_variant"
-                android:textColor="@color/on_surface"
-                android:textColorHint="@color/on_surface_variant"
+                android:background="@drawable/edit_bg_rounded"
+                android:textColor="#FFFFFFFF"
+                android:textColorHint="#66FFFFFF"
                 android:textSize="13sp"
+                android:textStyle="bold"
                 android:inputType="number"
                 android:gravity="center"
                 android:padding="4dp"
                 android:hint="2400" />
         </LinearLayout>
 
-        <!-- Reset button -->
-        <Button
-            android:id="@+id/btnReset"
+        <!-- Transparency -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ПРОЗРАЧНОСТЬ"
+            android:textColor="#AAFFFFFF"
+            android:textSize="10sp"
+            android:letterSpacing="0.1"
+            android:layout_marginTop="14dp" />
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:text="@string/reset_button"
-            android:textSize="13sp"
-            android:layout_marginTop="12dp" />
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="4dp">
+
+            <SeekBar
+                android:id="@+id/seekTransparency"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="100"
+                android:progress="75"
+                android:progressTint="#FF03DAC5"
+                android:thumbTint="#FF03DAC5" />
+
+            <TextView
+                android:id="@+id/tvTransparency"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="75%"
+                android:textColor="#FF03DAC5"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <!-- Buttons row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="14dp">
+
+            <Button
+                android:id="@+id/btnReset"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="СБРОС"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:background="@drawable/btn_reset_bg" />
+
+            <Button
+                android:id="@+id/btnSavePreset"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:text="СОХРАНИТЬ"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:background="@drawable/btn_save_bg" />
+        </LinearLayout>
 
         <!-- Presets -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/presets_title"
-            android:textColor="@color/on_surface"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="4dp" />
+            android:text="ПРЕСЕТЫ"
+            android:textColor="#AAFFFFFF"
+            android:textSize="10sp"
+            android:letterSpacing="0.1"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="6dp" />
 
         <HorizontalScrollView
             android:layout_width="match_parent"
@@ -166,14 +363,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
         </HorizontalScrollView>
-
-        <Button
-            android:id="@+id/btnSavePreset"
-            android:layout_width="match_parent"
-            android:layout_height="36dp"
-            android:text="@string/save_preset"
-            android:textSize="12sp"
-            android:layout_marginTop="8dp" />
 
     </LinearLayout>
 </LinearLayout>

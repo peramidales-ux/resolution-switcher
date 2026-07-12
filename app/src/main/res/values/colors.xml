@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#FF1976D2</color>
-    <color name="primary_dark">#FF1565C0</color>
+    <color name="primary">#FFFF6D00</color>
+    <color name="primary_dark">#FFE65100</color>
     <color name="accent">#FF03DAC5</color>
-    <color name="background">#FF121212</color>
-    <color name="surface">#FF1E1E1E</color>
-    <color name="surface_variant">#FF2C2C2C</color>
+    <color name="background">#FF0D0D1A</color>
+    <color name="surface">#FF1A1A2E</color>
+    <color name="surface_variant">#FF252540</color>
     <color name="on_primary">#FFFFFFFF</color>
     <color name="on_surface">#FFFFFFFF</color>
     <color name="on_surface_variant">#FFB0B0B0</color>
-    <color name="overlay_bg">#E61E1E1E</color>
-    <color name="overlay_header">#FF1976D2</color>
+    <color name="overlay_bg">#E61A1A2E</color>
+    <color name="overlay_header">#FFFF6D00</color>
     <color name="slider_track">#FF444444</color>
-    <color name="slider_thumb">#FF1976D2</color>
+    <color name="slider_thumb">#FFFF6D00</color>
     <color name="status_green">#FF4CAF50</color>
     <color name="status_red">#FFF44336</color>
     <color name="chip_bg">#FF333333</color>

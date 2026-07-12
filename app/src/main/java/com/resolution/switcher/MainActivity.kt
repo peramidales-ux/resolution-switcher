@@ -1,7 +1,6 @@
 package com.resolution.switcher
 
 import android.graphics.PixelFormat
-import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -13,7 +12,9 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
@@ -49,6 +50,7 @@ class MainActivity : AppCompatActivity() {
     private var maxHeight = 2400
 
     private var resolutionController: ResolutionController? = null
+    private var overlayAlpha = 0.75f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,13 +59,11 @@ class MainActivity : AppCompatActivity() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         presetStorage = PresetStorage(this)
 
-        // Auto-detect access method if not set
         PermissionHelper.hasAnyAccessMethod(this)
         resolutionController = ResolutionController.create(this)
-        Log.d("ResSwitcher", "Controller created: ${resolutionController != null}, method: ${PermissionHelper.getAccessMethod(this)}")
 
         val tvVersion = findViewById<TextView>(R.id.tvVersion)
-        tvVersion.text = "v1.0.7"
+        tvVersion.text = "v1.1.0"
 
         val btnGrantOverlay = findViewById<Button>(R.id.btnGrantOverlay)
         val btnUseRoot = findViewById<Button>(R.id.btnUseRoot)
@@ -161,7 +161,7 @@ class MainActivity : AppCompatActivity() {
         overlayView = inflater.inflate(R.layout.overlay_panel, null)
 
         val params = WindowManager.LayoutParams(
-            320,
+            340,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
@@ -171,6 +171,7 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.TOP or Gravity.START
             x = 20
             y = 200
+            alpha = overlayAlpha
         }
 
         overlayView!!.tag = params
@@ -179,7 +180,6 @@ class MainActivity : AppCompatActivity() {
             windowManager.addView(overlayView, params)
             setupOverlayListeners(overlayView!!)
             loadNativeResolution()
-            Toast.makeText(this, "Оверлей добавлен в WindowManager!", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
             e.printStackTrace()
@@ -190,16 +190,50 @@ class MainActivity : AppCompatActivity() {
     private fun setupOverlayListeners(view: View) {
         val header = view.findViewById<LinearLayout>(R.id.header)
         val btnCollapse = view.findViewById<ImageButton>(R.id.btnCollapse)
+        val btnHide = view.findViewById<ImageButton>(R.id.btnHide)
         val seekWidth = view.findViewById<SeekBar>(R.id.seekWidth)
         val seekHeight = view.findViewById<SeekBar>(R.id.seekHeight)
         val etWidth = view.findViewById<EditText>(R.id.etWidth)
         val etHeight = view.findViewById<EditText>(R.id.etHeight)
+        val seekTransparency = view.findViewById<SeekBar>(R.id.seekTransparency)
+        val tvTransparency = view.findViewById<TextView>(R.id.tvTransparency)
         val btnReset = view.findViewById<Button>(R.id.btnReset)
         val btnSavePreset = view.findViewById<Button>(R.id.btnSavePreset)
         val chipGroup = view.findViewById<ChipGroup>(R.id.chipGroupPresets)
 
         setupDrag(header, view)
         btnCollapse.setOnClickListener { collapseOverlay() }
+        btnHide.setOnClickListener { hideOverlay() }
+
+        // Transparency
+        seekTransparency.progress = (overlayAlpha * 100).toInt()
+        tvTransparency.text = "${(overlayAlpha * 100).toInt()}%"
+        seekTransparency.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    overlayAlpha = p / 100f
+                    tvTransparency.text = "${p}%"
+                    val params = overlayView?.tag as? WindowManager.LayoutParams
+                    params?.alpha = overlayAlpha
+                    try { windowManager.updateViewLayout(overlayView, params) } catch (_: Exception) {}
+                }
+            }
+            override fun onStartTrackingTouch(s: SeekBar?) {}
+            override fun onStopTrackingTouch(s: SeekBar?) {}
+        })
+
+        // Aspect ratio buttons
+        setupAspectRatioButton(view.findViewById(R.id.btnAR_16_9), 16, 9)
+        setupAspectRatioButton(view.findViewById(R.id.btnAR_16_10), 16, 10)
+        setupAspectRatioButton(view.findViewById(R.id.btnAR_4_3), 4, 3)
+        setupAspectRatioButton(view.findViewById(R.id.btnAR_21_9), 21, 9)
+        setupAspectRatioButton(view.findViewById(R.id.btnAR_1_1), 1, 1)
+
+        view.findViewById<TextView>(R.id.btnAR_NATIVE).setOnClickListener {
+            setWidthValue(nativeWidth)
+            setHeightValue(nativeHeight)
+            debouncedSet(nativeWidth, nativeHeight)
+        }
 
         seekWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
@@ -284,6 +318,30 @@ class MainActivity : AppCompatActivity() {
         loadPresets(chipGroup)
     }
 
+    private fun setupAspectRatioButton(button: TextView, ratioW: Int, ratioH: Int) {
+        button.setOnClickListener {
+            // Calculate resolution that fits native with given aspect ratio
+            val newW: Int
+            val newH: Int
+            val nativeRatio = nativeWidth.toFloat() / nativeHeight
+            val targetRatio = ratioW.toFloat() / ratioH
+
+            if (targetRatio > nativeRatio) {
+                // Wider than native - fit to width
+                newW = nativeWidth
+                newH = (nativeWidth * ratioH / ratioW)
+            } else {
+                // Taller than native - fit to height
+                newH = nativeHeight
+                newW = (nativeHeight * ratioW / ratioH)
+            }
+
+            setWidthValue(newW)
+            setHeightValue(newH)
+            debouncedSet(newW, newH)
+        }
+    }
+
     private fun setupDrag(header: View, view: View) {
         var ix = 0; var iy = 0; var tx = 0f; var ty = 0f
         header.setOnTouchListener { _, e ->
@@ -307,12 +365,31 @@ class MainActivity : AppCompatActivity() {
         }
         overlayView = null
 
-        collapsedView = View(this).apply { setBackgroundColor(0xFF1976D2.toInt()) }
-        val p = WindowManager.LayoutParams(48, 48,
+        // Circular collapsed view with tiger logo
+        val container = FrameLayout(this).apply {
+            layoutParams = FrameLayout.LayoutParams(72, 72)
+            background = getDrawable(R.drawable.collapsed_circle_bg)
+        }
+
+        val logo = ImageView(this).apply {
+            setImageResource(R.drawable.ic_tiger_logo)
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            layoutParams = FrameLayout.LayoutParams(60, 60).apply {
+                gravity = Gravity.CENTER
+            }
+        }
+        container.addView(logo)
+
+        collapsedView = container
+
+        val p = WindowManager.LayoutParams(72, 72,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
-        ).apply { gravity = Gravity.TOP or Gravity.START; x = 20; y = 200 }
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START; x = 20; y = 200
+            alpha = overlayAlpha
+        }
         collapsedView!!.tag = p
         collapsedView!!.setOnClickListener { expandOverlay() }
         setupDrag(collapsedView!!, p, true)
@@ -325,6 +402,14 @@ class MainActivity : AppCompatActivity() {
         }
         collapsedView = null
         showOverlay()
+    }
+
+    private fun hideOverlay() {
+        overlayView?.let {
+            try { windowManager.removeView(it) } catch (_: Exception) {}
+        }
+        overlayView = null
+        Toast.makeText(this, "Оверлей скрыт. Запустите снова из приложения.", Toast.LENGTH_SHORT).show()
     }
 
     private fun setupDrag(view: View, params: WindowManager.LayoutParams, isCollapsed: Boolean = false) {
@@ -362,7 +447,6 @@ class MainActivity : AppCompatActivity() {
             }
             resolutionController?.getNativeDensity()?.let { dpi ->
                 nativeDensity = dpi
-                Log.d("ResSwitcher", "Native density: $dpi")
             }
         }
     }
@@ -371,12 +455,16 @@ class MainActivity : AppCompatActivity() {
     private fun getCurrentHeight(): Int = overlayView?.findViewById<EditText>(R.id.etHeight)?.text?.toString()?.toIntOrNull() ?: nativeHeight
 
     private fun setWidthValue(v: Int) {
-        overlayView?.let { it.findViewById<SeekBar>(R.id.seekWidth)?.progress = valueToProgress(v, minWidth, maxWidth)
-            it.findViewById<EditText>(R.id.etWidth)?.setText(v.toString()) }
+        overlayView?.let {
+            it.findViewById<SeekBar>(R.id.seekWidth)?.progress = valueToProgress(v, minWidth, maxWidth)
+            it.findViewById<EditText>(R.id.etWidth)?.setText(v.toString())
+        }
     }
     private fun setHeightValue(v: Int) {
-        overlayView?.let { it.findViewById<SeekBar>(R.id.seekHeight)?.progress = valueToProgress(v, minHeight, maxHeight)
-            it.findViewById<EditText>(R.id.etHeight)?.setText(v.toString()) }
+        overlayView?.let {
+            it.findViewById<SeekBar>(R.id.seekHeight)?.progress = valueToProgress(v, minHeight, maxHeight)
+            it.findViewById<EditText>(R.id.etHeight)?.setText(v.toString())
+        }
     }
 
     private fun progressToValue(p: Int, min: Int, max: Int) = min + ((max - min) * p / 100)
@@ -386,23 +474,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var pendingW: Runnable? = null
-    private var pendingH: Runnable? = null
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
 
     private fun debouncedSet(w: Int, h: Int) {
         pendingW?.let { handler.removeCallbacks(it) }
-        pendingH?.let { handler.removeCallbacks(it) }
         pendingW = Runnable {
             scope.launch {
-                // Calculate proportional density so the image stretches to fill the screen
                 val scale = maxOf(w.toFloat() / nativeWidth, h.toFloat() / nativeHeight)
                 val newDpi = (nativeDensity * scale).toInt().coerceAtLeast(1)
-                Log.d("ResSwitcher", "Calling setResolution($w, $h) + density($newDpi), controller=${resolutionController != null}")
                 val resOk = resolutionController?.setResolution(w, h)
                 val dpiOk = resolutionController?.setDensity(newDpi)
-                Log.d("ResSwitcher", "setResolution=$resOk, setDensity=$dpiOk")
                 overlayView?.post {
-                    Toast.makeText(this@MainActivity, "Разрешение: $w x $h, density: $newDpi (${if (resOk == true && dpiOk == true) "OK" else "FAIL"})", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "${w}x${h} (${if (resOk == true && dpiOk == true) "OK" else "FAIL"})", Toast.LENGTH_SHORT).show()
                 }
             }
         }
