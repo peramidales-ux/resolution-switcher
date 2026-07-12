@@ -3,22 +3,43 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
-    android:padding="24dp">
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:padding="20dp"
         android:gravity="center_horizontal">
+
+        <!-- Logo -->
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginTop="24dp"
+            android:src="@drawable/ic_tiger_logo"
+            android:scaleType="centerCrop" />
+
+        <!-- App name -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="LAENFAER"
+            android:textColor="@color/on_surface"
+            android:fontFamily="sans-serif-black"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:layout_marginTop="12dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/setup_title"
-            android:textColor="@color/on_surface"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="4dp" />
+            android:text="RESOLUTION SWITCHER"
+            android:textColor="@color/primary"
+            android:textSize="11sp"
+            android:letterSpacing="0.15"
+            android:layout_marginTop="2dp" />
 
         <TextView
             android:id="@+id/tvVersion"
@@ -26,134 +47,205 @@
             android:layout_height="wrap_content"
             android:textColor="@color/on_surface_variant"
             android:textSize="11sp"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="28dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/setup_description"
-            android:textColor="@color/on_surface_variant"
-            android:textSize="14sp"
-            android:gravity="center"
-            android:layout_marginBottom="32dp" />
-
-        <!-- Overlay permission -->
+        <!-- Overlay permission card -->
         <LinearLayout
-            android:id="@+id/overlaySection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@color/surface"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp">
+            android:background="@drawable/card_bg"
+            android:padding="18dp"
+            android:layout_marginBottom="12dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/overlay_permission"
-                android:textColor="@color/on_surface"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/overlay_permission_desc"
-                android:textColor="@color/on_surface_variant"
-                android:textSize="12sp"
-                android:layout_marginTop="4dp" />
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="40dp"
+                    android:background="@color/accent" />
 
-            <TextView
-                android:id="@+id/overlayStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="13sp"
-                android:layout_marginTop="8dp" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ОВЕРЛЕЙ"
+                        android:textColor="@color/on_surface"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Разрешение поверх приложений"
+                        android:textColor="@color/on_surface_variant"
+                        android:textSize="12sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/overlayStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <Button
                 android:id="@+id/btnGrantOverlay"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/grant_overlay"
-                android:layout_marginTop="8dp" />
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="ПРЕДОСТАВИТЬ РАЗРЕШЕНИЕ"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textAllCaps="false"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/btn_accent_bg" />
         </LinearLayout>
 
-        <!-- Root section -->
+        <!-- Root card -->
         <LinearLayout
-            android:id="@+id/rootSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@color/surface"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp">
+            android:background="@drawable/card_bg"
+            android:padding="18dp"
+            android:layout_marginBottom="12dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Root"
-                android:textColor="@color/on_surface"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/rootStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="13sp"
-                android:layout_marginTop="4dp" />
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="40dp"
+                    android:background="@color/status_green" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ROOT"
+                        android:textColor="@color/on_surface"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:id="@+id/rootStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+            </LinearLayout>
 
             <Button
                 android:id="@+id/btnUseRoot"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/use_root"
-                android:layout_marginTop="8dp" />
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="ИСПОЛЬЗОВАТЬ ROOT"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textAllCaps="false"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/btn_orange_bg" />
         </LinearLayout>
 
-        <!-- Shizuku section -->
+        <!-- Shizuku card -->
         <LinearLayout
-            android:id="@+id/shizukuSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@color/surface"
-            android:padding="16dp"
-            android:layout_marginBottom="32dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Shizuku"
-                android:textColor="@color/on_surface"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/shizukuStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="13sp"
-                android:layout_marginTop="4dp" />
+            android:background="@drawable/card_bg"
+            android:padding="18dp"
+            android:layout_marginBottom="24dp">
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="8dp">
+                android:gravity="center_vertical">
+
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="40dp"
+                    android:background="@color/primary" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="SHIZUKU"
+                        android:textColor="@color/on_surface"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:id="@+id/shizukuStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
 
                 <Button
                     android:id="@+id/btnSetupShizuku"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/setup_shizuku"
-                    android:layout_marginEnd="8dp" />
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="НАСТРОИТЬ"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="false"
+                    android:background="@drawable/btn_outline_bg" />
 
                 <Button
                     android:id="@+id/btnUseShizuku"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/use_shizuku" />
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="ВЫБРАТЬ"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="false"
+                    android:background="@drawable/btn_orange_bg" />
             </LinearLayout>
         </LinearLayout>
 
@@ -162,9 +254,15 @@
             android:id="@+id/btnStart"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:text="@string/start_service"
+            android:text="ЗАПУСТИТЬ"
             android:textSize="16sp"
-            android:enabled="false" />
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFFFF"
+            android:fontFamily="sans-serif-medium"
+            android:enabled="false"
+            android:background="@drawable/btn_start_bg"
+            android:layout_marginBottom="24dp" />
 
     </LinearLayout>
 </ScrollView>

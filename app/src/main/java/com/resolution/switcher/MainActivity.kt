@@ -161,7 +161,7 @@ class MainActivity : AppCompatActivity() {
         overlayView = inflater.inflate(R.layout.overlay_panel, null)
 
         val params = WindowManager.LayoutParams(
-            340,
+            380,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
@@ -365,16 +365,16 @@ class MainActivity : AppCompatActivity() {
         }
         overlayView = null
 
-        // Circular collapsed view with tiger logo
+        // Circular collapsed view with tiger logo — 80dp
         val container = FrameLayout(this).apply {
-            layoutParams = FrameLayout.LayoutParams(72, 72)
+            layoutParams = FrameLayout.LayoutParams(80, 80)
             background = getDrawable(R.drawable.collapsed_circle_bg)
         }
 
         val logo = ImageView(this).apply {
             setImageResource(R.drawable.ic_tiger_logo)
             scaleType = ImageView.ScaleType.CENTER_CROP
-            layoutParams = FrameLayout.LayoutParams(60, 60).apply {
+            layoutParams = FrameLayout.LayoutParams(80, 80).apply {
                 gravity = Gravity.CENTER
             }
         }
@@ -382,7 +382,7 @@ class MainActivity : AppCompatActivity() {
 
         collapsedView = container
 
-        val p = WindowManager.LayoutParams(72, 72,
+        val p = WindowManager.LayoutParams(80, 80,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT

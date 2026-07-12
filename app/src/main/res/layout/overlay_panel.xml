@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/overlayRoot"
-    android:layout_width="320dp"
+    android:layout_width="360dp"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@drawable/overlay_bg_rounded"
@@ -12,19 +12,19 @@
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="52dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:background="@drawable/header_bg_rounded"
-        android:paddingStart="12dp"
+        android:paddingStart="14dp"
         android:paddingEnd="4dp">
 
         <ImageView
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:src="@drawable/ic_tiger_logo"
             android:scaleType="centerCrop"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="10dp" />
 
         <TextView
             android:layout_width="0dp"
@@ -33,14 +33,14 @@
             android:text="LAENFAER"
             android:textColor="#FFFFFFFF"
             android:fontFamily="sans-serif-black"
-            android:textSize="14sp"
+            android:textSize="15sp"
             android:textStyle="bold"
             android:letterSpacing="0.05" />
 
         <ImageButton
             android:id="@+id/btnHide"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_hide"
             android:contentDescription="Скрыть"
@@ -48,8 +48,8 @@
 
         <ImageButton
             android:id="@+id/btnCollapse"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_collapse"
             android:contentDescription="Свернуть"
@@ -62,7 +62,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="14dp">
+        android:padding="16dp">
 
         <!-- Native resolution info -->
         <TextView
@@ -70,35 +70,34 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="#AAFFFFFF"
-            android:textSize="11sp"
-            android:layout_marginBottom="10dp" />
+            android:textSize="12sp"
+            android:layout_marginBottom="12dp" />
 
         <!-- Aspect Ratio Quick Select -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="СООТНОШЕНИЕ СТОРОН"
-            android:textColor="#AAFFFFFF"
+            android:textColor="#88FFFFFF"
             android:textSize="10sp"
-            android:letterSpacing="0.1"
-            android:layout_marginBottom="6dp" />
+            android:letterSpacing="0.12"
+            android:layout_marginBottom="8dp" />
 
         <LinearLayout
-            android:id="@+id/aspectRatioGroup"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="8dp">
 
             <TextView
                 android:id="@+id/btnAR_16_9"
                 android:layout_width="0dp"
-                android:layout_height="32dp"
+                android:layout_height="40dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
                 android:text="16:9"
                 android:textColor="#FFFFFFFF"
-                android:textSize="11sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:background="@drawable/ar_button_bg"
@@ -108,13 +107,13 @@
             <TextView
                 android:id="@+id/btnAR_16_10"
                 android:layout_width="0dp"
-                android:layout_height="32dp"
+                android:layout_height="40dp"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
                 android:layout_marginEnd="4dp"
                 android:text="16:10"
                 android:textColor="#FFFFFFFF"
-                android:textSize="11sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:background="@drawable/ar_button_bg"
@@ -124,12 +123,12 @@
             <TextView
                 android:id="@+id/btnAR_4_3"
                 android:layout_width="0dp"
-                android:layout_height="32dp"
+                android:layout_height="40dp"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
                 android:text="4:3"
                 android:textColor="#FFFFFFFF"
-                android:textSize="11sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:background="@drawable/ar_button_bg"
@@ -141,17 +140,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="14dp">
 
             <TextView
                 android:id="@+id/btnAR_21_9"
                 android:layout_width="0dp"
-                android:layout_height="32dp"
+                android:layout_height="40dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
                 android:text="21:9"
                 android:textColor="#FFFFFFFF"
-                android:textSize="11sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:background="@drawable/ar_button_bg"
@@ -161,13 +160,13 @@
             <TextView
                 android:id="@+id/btnAR_1_1"
                 android:layout_width="0dp"
-                android:layout_height="32dp"
+                android:layout_height="40dp"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
                 android:layout_marginEnd="4dp"
                 android:text="1:1"
                 android:textColor="#FFFFFFFF"
-                android:textSize="11sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:background="@drawable/ar_button_bg"
@@ -177,12 +176,12 @@
             <TextView
                 android:id="@+id/btnAR_NATIVE"
                 android:layout_width="0dp"
-                android:layout_height="32dp"
+                android:layout_height="40dp"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
-                android:text="ОРИГИНАЛ"
+                android:text="СБРОС"
                 android:textColor="#FF03DAC5"
-                android:textSize="9sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:background="@drawable/ar_button_reset_bg"
@@ -195,16 +194,16 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="ШИРИНА"
-            android:textColor="#AAFFFFFF"
+            android:textColor="#88FFFFFF"
             android:textSize="10sp"
-            android:letterSpacing="0.1" />
+            android:letterSpacing="0.12" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginTop="4dp">
+            android:layout_marginTop="6dp">
 
             <SeekBar
                 android:id="@+id/seekWidth"
@@ -217,13 +216,13 @@
 
             <EditText
                 android:id="@+id/etWidth"
-                android:layout_width="72dp"
-                android:layout_height="34dp"
-                android:layout_marginStart="8dp"
+                android:layout_width="80dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="10dp"
                 android:background="@drawable/edit_bg_rounded"
                 android:textColor="#FFFFFFFF"
-                android:textColorHint="#66FFFFFF"
-                android:textSize="13sp"
+                android:textColorHint="#55FFFFFF"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 android:inputType="number"
                 android:gravity="center"
@@ -236,17 +235,17 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="ВЫСОТА"
-            android:textColor="#AAFFFFFF"
+            android:textColor="#88FFFFFF"
             android:textSize="10sp"
-            android:letterSpacing="0.1"
-            android:layout_marginTop="10dp" />
+            android:letterSpacing="0.12"
+            android:layout_marginTop="14dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginTop="4dp">
+            android:layout_marginTop="6dp">
 
             <SeekBar
                 android:id="@+id/seekHeight"
@@ -259,13 +258,13 @@
 
             <EditText
                 android:id="@+id/etHeight"
-                android:layout_width="72dp"
-                android:layout_height="34dp"
-                android:layout_marginStart="8dp"
+                android:layout_width="80dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="10dp"
                 android:background="@drawable/edit_bg_rounded"
                 android:textColor="#FFFFFFFF"
-                android:textColorHint="#66FFFFFF"
-                android:textSize="13sp"
+                android:textColorHint="#55FFFFFF"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 android:inputType="number"
                 android:gravity="center"
@@ -278,17 +277,17 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="ПРОЗРАЧНОСТЬ"
-            android:textColor="#AAFFFFFF"
+            android:textColor="#88FFFFFF"
             android:textSize="10sp"
-            android:letterSpacing="0.1"
-            android:layout_marginTop="14dp" />
+            android:letterSpacing="0.12"
+            android:layout_marginTop="16dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginTop="4dp">
+            android:layout_marginTop="6dp">
 
             <SeekBar
                 android:id="@+id/seekTransparency"
@@ -302,12 +301,12 @@
 
             <TextView
                 android:id="@+id/tvTransparency"
-                android:layout_width="40dp"
+                android:layout_width="44dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="10dp"
                 android:text="75%"
                 android:textColor="#FF03DAC5"
-                android:textSize="12sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:gravity="center" />
         </LinearLayout>
@@ -317,28 +316,30 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="14dp">
+            android:layout_marginTop="16dp">
 
             <Button
                 android:id="@+id/btnReset"
                 android:layout_width="0dp"
-                android:layout_height="38dp"
+                android:layout_height="44dp"
                 android:layout_weight="1"
-                android:layout_marginEnd="4dp"
+                android:layout_marginEnd="6dp"
                 android:text="СБРОС"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
+                android:textAllCaps="false"
                 android:background="@drawable/btn_reset_bg" />
 
             <Button
                 android:id="@+id/btnSavePreset"
                 android:layout_width="0dp"
-                android:layout_height="38dp"
+                android:layout_height="44dp"
                 android:layout_weight="1"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="6dp"
                 android:text="СОХРАНИТЬ"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
+                android:textAllCaps="false"
                 android:background="@drawable/btn_save_bg" />
         </LinearLayout>
 
@@ -347,11 +348,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="ПРЕСЕТЫ"
-            android:textColor="#AAFFFFFF"
+            android:textColor="#88FFFFFF"
             android:textSize="10sp"
-            android:letterSpacing="0.1"
-            android:layout_marginTop="14dp"
-            android:layout_marginBottom="6dp" />
+            android:letterSpacing="0.12"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp" />
 
         <HorizontalScrollView
             android:layout_width="match_parent"
