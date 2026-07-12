@@ -10,6 +10,9 @@ interface ResolutionController {
     suspend fun resetResolution(): Boolean
     suspend fun getNativeResolution(): Pair<Int, Int>?
     suspend fun getCurrentResolution(): Pair<Int, Int>?
+    suspend fun setDensity(dpi: Int): Boolean
+    suspend fun getNativeDensity(): Int?
+    suspend fun resetDensity(): Boolean
 
     companion object {
         fun create(context: Context): ResolutionController? {

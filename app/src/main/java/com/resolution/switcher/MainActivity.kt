@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
 
     private var nativeWidth = 1080
     private var nativeHeight = 2400
+    private var nativeDensity = 420
     private var minWidth = 0
     private var maxWidth = 1080
     private var minHeight = 0
@@ -251,6 +252,7 @@ class MainActivity : AppCompatActivity() {
         btnReset.setOnClickListener {
             scope.launch {
                 resolutionController?.resetResolution()
+                resolutionController?.resetDensity()
                 overlayView?.post {
                     setWidthValue(nativeWidth)
                     setHeightValue(nativeHeight)
@@ -358,6 +360,10 @@ class MainActivity : AppCompatActivity() {
                     overlayView?.findViewById<TextView>(R.id.tvNativeRes)?.text = "Заводское: ${w}x${h}"
                 }
             }
+            resolutionController?.getNativeDensity()?.let { dpi ->
+                nativeDensity = dpi
+                Log.d("ResSwitcher", "Native density: $dpi")
+            }
         }
     }
 
@@ -388,11 +394,15 @@ class MainActivity : AppCompatActivity() {
         pendingH?.let { handler.removeCallbacks(it) }
         pendingW = Runnable {
             scope.launch {
-                Log.d("ResSwitcher", "Calling setResolution($w, $h), controller=${resolutionController != null}")
-                val result = resolutionController?.setResolution(w, h)
-                Log.d("ResSwitcher", "setResolution result: $result")
+                // Calculate proportional density so the image stretches to fill the screen
+                val scale = maxOf(w.toFloat() / nativeWidth, h.toFloat() / nativeHeight)
+                val newDpi = (nativeDensity * scale).toInt().coerceAtLeast(1)
+                Log.d("ResSwitcher", "Calling setResolution($w, $h) + density($newDpi), controller=${resolutionController != null}")
+                val resOk = resolutionController?.setResolution(w, h)
+                val dpiOk = resolutionController?.setDensity(newDpi)
+                Log.d("ResSwitcher", "setResolution=$resOk, setDensity=$dpiOk")
                 overlayView?.post {
-                    Toast.makeText(this@MainActivity, "Разрешение: $w x $h (${if (result == true) "OK" else "FAIL"})", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "Разрешение: $w x $h, density: $newDpi (${if (resOk == true && dpiOk == true) "OK" else "FAIL"})", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -407,7 +417,7 @@ class MainActivity : AppCompatActivity() {
                 isCheckable = false; isCloseIconVisible = true
                 setOnClickListener {
                     setWidthValue(preset.width); setHeightValue(preset.height)
-                    scope.launch { resolutionController?.setResolution(preset.width, preset.height) }
+                    debouncedSet(preset.width, preset.height)
                 }
                 setOnCloseIconClickListener {
                     presetStorage.delete(preset.id); chipGroup.removeView(this)

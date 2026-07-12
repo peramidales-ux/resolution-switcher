@@ -40,6 +40,19 @@ class ShizukuResolutionMethod : ResolutionController {
         RootResolutionMethod.parseCurrentResolution(output)
     }
 
+    override suspend fun setDensity(dpi: Int): Boolean = withContext(Dispatchers.IO) {
+        executeCommand("wm density $dpi")
+    }
+
+    override suspend fun getNativeDensity(): Int? = withContext(Dispatchers.IO) {
+        val output = executeCommandWithOutput("wm density") ?: return@withContext null
+        RootResolutionMethod.parseNativeDensity(output)
+    }
+
+    override suspend fun resetDensity(): Boolean = withContext(Dispatchers.IO) {
+        executeCommand("wm density reset")
+    }
+
     private fun executeCommand(command: String): Boolean {
         return try {
             val process = newProcessMethod?.invoke(

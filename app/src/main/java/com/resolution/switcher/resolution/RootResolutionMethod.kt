@@ -23,6 +23,19 @@ class RootResolutionMethod : ResolutionController {
         parseCurrentResolution(output)
     }
 
+    override suspend fun setDensity(dpi: Int): Boolean = withContext(Dispatchers.IO) {
+        executeCommand("wm density $dpi")
+    }
+
+    override suspend fun getNativeDensity(): Int? = withContext(Dispatchers.IO) {
+        val output = executeCommandWithOutput("wm density") ?: return@withContext null
+        parseNativeDensity(output)
+    }
+
+    override suspend fun resetDensity(): Boolean = withContext(Dispatchers.IO) {
+        executeCommand("wm density reset")
+    }
+
     private fun executeCommand(command: String): Boolean {
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("su", "-c", command))
@@ -59,6 +72,12 @@ class RootResolutionMethod : ResolutionController {
                 return Pair(overrideMatch.groupValues[1].toInt(), overrideMatch.groupValues[2].toInt())
             }
             return parseNativeResolution(output)
+        }
+
+        fun parseNativeDensity(output: String): Int? {
+            val match = Regex("Physical density:\\s*(\\d+)").find(output)
+                ?: Regex("Override density:\\s*(\\d+)").find(output)
+            return match?.groupValues?.get(1)?.toInt()
         }
     }
 }
