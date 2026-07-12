@@ -56,6 +56,9 @@ class MainActivity : AppCompatActivity() {
         presetStorage = PresetStorage(this)
         resolutionController = ResolutionController.create(this)
 
+        val tvVersion = findViewById<TextView>(R.id.tvVersion)
+        tvVersion.text = "v1.0.7"
+
         val btnGrantOverlay = findViewById<Button>(R.id.btnGrantOverlay)
         val btnUseRoot = findViewById<Button>(R.id.btnUseRoot)
         val btnUseShizuku = findViewById<Button>(R.id.btnUseShizuku)
@@ -153,7 +156,7 @@ class MainActivity : AppCompatActivity() {
             320,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
