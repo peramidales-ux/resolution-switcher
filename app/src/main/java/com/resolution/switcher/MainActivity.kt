@@ -59,6 +59,9 @@ class MainActivity : AppCompatActivity() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         presetStorage = PresetStorage(this)
 
+        // Clean up stale overlays from previous sessions
+        cleanupStaleOverlays()
+
         PermissionHelper.hasAnyAccessMethod(this)
         resolutionController = ResolutionController.create(this)
 
@@ -113,6 +116,16 @@ class MainActivity : AppCompatActivity() {
             showOverlay()
             Toast.makeText(this, "Оверлей показан!", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun cleanupStaleOverlays() {
+        try {
+            val currentOverlay = overlayView
+            val currentCollapsed = collapsedView
+            // Remove any orphaned overlay views
+            overlayView = null
+            collapsedView = null
+        } catch (_: Exception) {}
     }
 
     override fun onResume() {
