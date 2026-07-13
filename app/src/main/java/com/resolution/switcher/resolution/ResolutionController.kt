@@ -2,8 +2,6 @@ package com.resolution.switcher.resolution
 
 import android.content.Context
 import com.resolution.switcher.util.PermissionHelper
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 interface ResolutionController {
     suspend fun setResolution(width: Int, height: Int): Boolean
@@ -18,8 +16,8 @@ interface ResolutionController {
         fun create(context: Context): ResolutionController? {
             val method = PermissionHelper.getAccessMethod(context)
             return when (method) {
-                "root" -> RootResolutionMethod()
-                "shizuku" -> ShizukuResolutionMethod()
+                "root" -> RootResolutionMethod(context)
+                "shizuku" -> ShizukuResolutionMethod(context)
                 else -> null
             }
         }

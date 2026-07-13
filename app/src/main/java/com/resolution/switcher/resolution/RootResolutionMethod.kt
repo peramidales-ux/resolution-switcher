@@ -1,15 +1,15 @@
 package com.resolution.switcher.resolution
 
+import android.content.Context
+import com.resolution.switcher.util.OverlayPrefs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class RootResolutionMethod : ResolutionController {
+class RootResolutionMethod(private val context: Context) : ResolutionController {
 
     override suspend fun setResolution(width: Int, height: Int): Boolean = withContext(Dispatchers.IO) {
-        // Try multiple approaches to force screen stretch
         executeCommand("wm overscan 0,0,0,0")
         executeCommand("wm size ${width}x${height}")
-        // Force display manager to apply new config
         executeCommand("settings put system display_size_forced ${width}x${height}")
         true
     }

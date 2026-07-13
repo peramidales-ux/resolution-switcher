@@ -4,7 +4,6 @@ import android.graphics.PixelFormat
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -25,6 +24,7 @@ import com.google.android.material.chip.ChipGroup
 import com.resolution.switcher.presets.Preset
 import com.resolution.switcher.presets.PresetStorage
 import com.resolution.switcher.resolution.ResolutionController
+import com.resolution.switcher.util.OverlayPrefs
 import com.resolution.switcher.util.PermissionHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -51,6 +51,7 @@ class MainActivity : AppCompatActivity() {
 
     private var resolutionController: ResolutionController? = null
     private var overlayAlpha = 0.75f
+    private var appMonitor: ForegroundAppMonitor? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,15 +59,15 @@ class MainActivity : AppCompatActivity() {
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         presetStorage = PresetStorage(this)
+        overlayAlpha = OverlayPrefs.getAlpha(this)
 
-        // Clean up stale overlays from previous sessions
         cleanupStaleOverlays()
 
         PermissionHelper.hasAnyAccessMethod(this)
         resolutionController = ResolutionController.create(this)
 
         val tvVersion = findViewById<TextView>(R.id.tvVersion)
-        tvVersion.text = "v1.1.0"
+        tvVersion.text = "v1.2.0"
 
         val btnGrantOverlay = findViewById<Button>(R.id.btnGrantOverlay)
         val btnUseRoot = findViewById<Button>(R.id.btnUseRoot)
@@ -113,16 +114,28 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnStart.setOnClickListener {
+            startAppMonitor()
             showOverlay()
             Toast.makeText(this, "Оверлей показан!", Toast.LENGTH_SHORT).show()
         }
+
+        val btnGrantUsageStats = findViewById<Button>(R.id.btnGrantUsageStats)
+        btnGrantUsageStats.setOnClickListener {
+            PermissionHelper.requestUsageStatsPermission(this)
+        }
+    }
+
+    private fun startAppMonitor() {
+        appMonitor?.stop()
+        appMonitor = ForegroundAppMonitor(
+            context = this,
+            resolutionController = resolutionController
+        )
+        appMonitor?.start()
     }
 
     private fun cleanupStaleOverlays() {
         try {
-            val currentOverlay = overlayView
-            val currentCollapsed = collapsedView
-            // Remove any orphaned overlay views
             overlayView = null
             collapsedView = null
         } catch (_: Exception) {}
@@ -131,6 +144,12 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateUI()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        appMonitor?.stop()
+        scope.cancel()
     }
 
     private fun updateUI() {
@@ -165,6 +184,13 @@ class MainActivity : AppCompatActivity() {
         val method = PermissionHelper.getAccessMethod(this)
         val canStart = hasOverlay && (method == "root" || method == "shizuku")
         findViewById<Button>(R.id.btnStart).isEnabled = canStart
+
+        val hasUsageStats = PermissionHelper.hasUsageStatsPermission(this)
+        findViewById<TextView>(R.id.usageStatsStatus).apply {
+            text = if (hasUsageStats) "Разрешение получено" else "Для смены разрешения только в приложениях"
+            setTextColor(getColor(if (hasUsageStats) R.color.status_green else R.color.on_surface_variant))
+        }
+        findViewById<Button>(R.id.btnGrantUsageStats).isEnabled = !hasUsageStats
     }
 
     private fun showOverlay() {
@@ -173,6 +199,7 @@ class MainActivity : AppCompatActivity() {
         val inflater = LayoutInflater.from(this)
         overlayView = inflater.inflate(R.layout.overlay_panel, null)
 
+        val savedPos = OverlayPrefs.getOverlayPosition(this)
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -182,8 +209,8 @@ class MainActivity : AppCompatActivity() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = 0
-            y = 0
+            x = savedPos.first
+            y = savedPos.second
             alpha = overlayAlpha
         }
 
@@ -229,6 +256,7 @@ class MainActivity : AppCompatActivity() {
                 if (fromUser) {
                     overlayAlpha = p / 100f
                     tvTransparency.text = "${p}%"
+                    OverlayPrefs.saveAlpha(this@MainActivity, overlayAlpha)
                     val params = overlayView?.tag as? WindowManager.LayoutParams
                     params?.alpha = overlayAlpha
                     try { windowManager.updateViewLayout(overlayView, params) } catch (_: Exception) {}
@@ -302,6 +330,7 @@ class MainActivity : AppCompatActivity() {
 
         btnReset.setOnClickListener {
             preserveAspect = true
+            OverlayPrefs.clearSavedResolution(this)
             scope.launch {
                 resolutionController?.resetResolution()
                 resolutionController?.resetDensity()
@@ -359,15 +388,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupDrag(header: View, view: View) {
-        var ix = 0; var iy = 0; var tx = 0f; var ty = 0f
+        var ix = 0; var iy = 0; var tx = 0f; var ty = 0f; var moved = false
         header.setOnTouchListener { _, e ->
             val p = view.tag as WindowManager.LayoutParams
             when (e.action) {
-                MotionEvent.ACTION_DOWN -> { ix = p.x; iy = p.y; tx = e.rawX; ty = e.rawY; true }
+                MotionEvent.ACTION_DOWN -> {
+                    ix = p.x; iy = p.y; tx = e.rawX; ty = e.rawY; moved = false; true
+                }
                 MotionEvent.ACTION_MOVE -> {
-                    p.x = ix + (e.rawX - tx).toInt()
-                    p.y = iy + (e.rawY - ty).toInt()
+                    val dx = e.rawX - tx; val dy = e.rawY - ty
+                    if (dx*dx + dy*dy > 100) moved = true
+                    p.x = ix + dx.toInt(); p.y = iy + dy.toInt()
                     try { windowManager.updateViewLayout(view, p) } catch (_: Exception) {}
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (moved) {
+                        OverlayPrefs.saveOverlayPosition(this@MainActivity, p.x, p.y)
+                    }
                     true
                 }
                 else -> false
@@ -377,11 +415,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun collapseOverlay() {
         overlayView?.let {
+            val params = it.tag as? WindowManager.LayoutParams
+            if (params != null) {
+                OverlayPrefs.saveOverlayPosition(this, params.x, params.y)
+            }
             try { windowManager.removeView(it) } catch (_: Exception) {}
         }
         overlayView = null
 
-        // Huge circular collapsed view with tiger logo — 160dp
         val size = 160
         val container = FrameLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams(size, size)
@@ -399,22 +440,29 @@ class MainActivity : AppCompatActivity() {
 
         collapsedView = container
 
+        val savedPos = OverlayPrefs.getCollapsedPosition(this)
         val p = WindowManager.LayoutParams(size, size,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.START; x = 20; y = 200
+            gravity = Gravity.TOP or Gravity.START
+            x = savedPos.first
+            y = savedPos.second
             alpha = overlayAlpha
         }
         collapsedView!!.tag = p
         collapsedView!!.setOnClickListener { expandOverlay() }
-        setupDrag(collapsedView!!, p, true)
+        setupDragCollapsed(collapsedView!!, p)
         windowManager.addView(collapsedView, p)
     }
 
     private fun expandOverlay() {
         collapsedView?.let {
+            val params = it.tag as? WindowManager.LayoutParams
+            if (params != null) {
+                OverlayPrefs.saveCollapsedPosition(this, params.x, params.y)
+            }
             try { windowManager.removeView(it) } catch (_: Exception) {}
         }
         collapsedView = null
@@ -429,7 +477,7 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Оверлей скрыт. Запустите снова из приложения.", Toast.LENGTH_SHORT).show()
     }
 
-    private fun setupDrag(view: View, params: WindowManager.LayoutParams, isCollapsed: Boolean = false) {
+    private fun setupDragCollapsed(view: View, params: WindowManager.LayoutParams) {
         var ix = 0; var iy = 0; var tx = 0f; var ty = 0f; var moved = false
         view.setOnTouchListener { _, e ->
             when (e.action) {
@@ -444,7 +492,10 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (!moved && isCollapsed) expandOverlay()
+                    if (moved) {
+                        OverlayPrefs.saveCollapsedPosition(this@MainActivity, params.x, params.y)
+                    }
+                    if (!moved) expandOverlay()
                     true
                 }
                 else -> false
@@ -498,14 +549,12 @@ class MainActivity : AppCompatActivity() {
     private fun debouncedSet(w: Int, h: Int) {
         pendingW?.let { handler.removeCallbacks(it) }
 
-        // Preserve native aspect ratio to avoid black bars
         val finalW: Int
         val finalH: Int
         if (preserveAspect && !ignoreAspectChange) {
             val nativeRatio = nativeWidth.toFloat() / nativeHeight
             finalW = w
             finalH = (w / nativeRatio).toInt().coerceIn(minHeight, maxHeight)
-            // Update height UI without triggering recursive change
             ignoreAspectChange = true
             setHeightValue(finalH)
             ignoreAspectChange = false
@@ -520,6 +569,9 @@ class MainActivity : AppCompatActivity() {
                 val newDpi = (nativeDensity * scale).toInt().coerceAtLeast(1)
                 val resOk = resolutionController?.setResolution(finalW, finalH)
                 val dpiOk = resolutionController?.setDensity(newDpi)
+                if (resOk == true && dpiOk == true) {
+                    OverlayPrefs.saveResolution(this@MainActivity, finalW, finalH, newDpi)
+                }
                 overlayView?.post {
                     Toast.makeText(this@MainActivity, "${finalW}x${finalH} (${if (resOk == true && dpiOk == true) "OK" else "FAIL"})", Toast.LENGTH_SHORT).show()
                 }

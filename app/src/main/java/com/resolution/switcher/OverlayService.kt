@@ -31,6 +31,7 @@ import com.google.android.material.chip.ChipGroup
 import com.resolution.switcher.presets.Preset
 import com.resolution.switcher.presets.PresetStorage
 import com.resolution.switcher.resolution.ResolutionController
+import com.resolution.switcher.util.OverlayPrefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -50,6 +51,7 @@ class OverlayService : Service() {
 
     private var nativeWidth = 1080
     private var nativeHeight = 2400
+    private var nativeDensity = 420
     private var minWidth = 0
     private var maxWidth = 1080
     private var minHeight = 0
@@ -61,6 +63,8 @@ class OverlayService : Service() {
     private val DEBOUNCE_MS = 200L
 
     private var resolutionController: ResolutionController? = null
+    private var appMonitor: ForegroundAppMonitor? = null
+    private var overlayAlpha = 0.75f
 
     companion object {
         const val CHANNEL_ID = "resolution_switcher"
@@ -76,10 +80,11 @@ class OverlayService : Service() {
             notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             presetStorage = PresetStorage(this)
             resolutionController = ResolutionController.create(this)
+            overlayAlpha = OverlayPrefs.getAlpha(this)
 
-            // Show overlay directly (no foreground service needed for now)
             loadNativeResolution()
             showOverlay()
+            startAppMonitor()
 
             Toast.makeText(this, "Оверлей запущен!", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
@@ -89,8 +94,18 @@ class OverlayService : Service() {
         }
     }
 
+    private fun startAppMonitor() {
+        appMonitor?.stop()
+        appMonitor = ForegroundAppMonitor(
+            context = this,
+            resolutionController = resolutionController
+        )
+        appMonitor?.start()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "CLOSE") {
+            appMonitor?.stop()
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
@@ -100,6 +115,7 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        appMonitor?.stop()
         serviceScope.cancel()
         removeOverlay()
         removeCollapsedView()
@@ -159,6 +175,7 @@ class OverlayService : Service() {
             resolutionController?.getNativeResolution()?.let { (w, h) ->
                 nativeWidth = w
                 nativeHeight = h
+                nativeDensity = resolutionController?.getNativeDensity() ?: 420
                 computeRanges()
                 overlayView?.post { updateNativeResText() }
             } ?: run {
@@ -200,6 +217,7 @@ class OverlayService : Service() {
     }
 
     private fun setupOverlayWindow(view: View) {
+        val savedPos = OverlayPrefs.getOverlayPosition(this)
         val params = WindowManager.LayoutParams(
             320,
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -209,8 +227,8 @@ class OverlayService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = 20
-            y = 200
+            x = savedPos.first
+            y = savedPos.second
         }
         view.tag = params
         windowManager.addView(view, params)
@@ -280,8 +298,10 @@ class OverlayService : Service() {
         })
 
         btnReset.setOnClickListener {
+            OverlayPrefs.clearSavedResolution(this)
             serviceScope.launch {
                 resolutionController?.resetResolution()
+                resolutionController?.resetDensity()
                 overlayView?.post {
                     setWidthValue(nativeWidth)
                     setHeightValue(nativeHeight)
@@ -298,6 +318,7 @@ class OverlayService : Service() {
         var initialY = 0
         var initialTouchX = 0f
         var initialTouchY = 0f
+        var moved = false
 
         header.setOnTouchListener { _, event ->
             val params = view.tag as WindowManager.LayoutParams
@@ -307,12 +328,22 @@ class OverlayService : Service() {
                     initialY = params.y
                     initialTouchX = event.rawX
                     initialTouchY = event.rawY
+                    moved = false
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    params.x = initialX + (event.rawX - initialTouchX).toInt()
-                    params.y = initialY + (event.rawY - initialTouchY).toInt()
+                    val dx = event.rawX - initialTouchX
+                    val dy = event.rawY - initialTouchY
+                    if (dx * dx + dy * dy > 100) moved = true
+                    params.x = initialX + dx.toInt()
+                    params.y = initialY + dy.toInt()
                     windowManager.updateViewLayout(view, params)
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (moved) {
+                        OverlayPrefs.saveOverlayPosition(this@OverlayService, params.x, params.y)
+                    }
                     true
                 }
                 else -> false
@@ -324,7 +355,14 @@ class OverlayService : Service() {
         pendingWidthRunnable?.let { handler.removeCallbacks(it) }
         pendingWidthRunnable = Runnable {
             serviceScope.launch {
-                resolutionController?.setResolution(width, getCurrentHeight())
+                val h = getCurrentHeight()
+                val scale = maxOf(width.toFloat() / nativeWidth, h.toFloat() / nativeHeight)
+                val dpi = (nativeDensity * scale).toInt().coerceAtLeast(1)
+                val resOk = resolutionController?.setResolution(width, h)
+                val dpiOk = resolutionController?.setDensity(dpi)
+                if (resOk == true && dpiOk == true) {
+                    OverlayPrefs.saveResolution(this@OverlayService, width, h, dpi)
+                }
             }
         }
         handler.postDelayed(pendingWidthRunnable!!, DEBOUNCE_MS)
@@ -334,7 +372,14 @@ class OverlayService : Service() {
         pendingHeightRunnable?.let { handler.removeCallbacks(it) }
         pendingHeightRunnable = Runnable {
             serviceScope.launch {
-                resolutionController?.setResolution(getCurrentWidth(), height)
+                val w = getCurrentWidth()
+                val scale = maxOf(w.toFloat() / nativeWidth, height.toFloat() / nativeHeight)
+                val dpi = (nativeDensity * scale).toInt().coerceAtLeast(1)
+                val resOk = resolutionController?.setResolution(w, height)
+                val dpiOk = resolutionController?.setDensity(dpi)
+                if (resOk == true && dpiOk == true) {
+                    OverlayPrefs.saveResolution(this@OverlayService, w, height, dpi)
+                }
             }
         }
         handler.postDelayed(pendingHeightRunnable!!, DEBOUNCE_MS)
@@ -378,12 +423,24 @@ class OverlayService : Service() {
     }
 
     private fun collapseOverlay() {
+        overlayView?.let {
+            val params = it.tag as? WindowManager.LayoutParams
+            if (params != null) {
+                OverlayPrefs.saveOverlayPosition(this, params.x, params.y)
+            }
+        }
         removeOverlay()
         showCollapsedTab()
         isCollapsed = true
     }
 
     private fun expandOverlay() {
+        collapsedView?.let {
+            val params = it.tag as? WindowManager.LayoutParams
+            if (params != null) {
+                OverlayPrefs.saveCollapsedPosition(this, params.x, params.y)
+            }
+        }
         removeCollapsedView()
         showOverlay()
         isCollapsed = false
@@ -394,6 +451,7 @@ class OverlayService : Service() {
             setBackgroundColor(0xFF1976D2.toInt())
         }
 
+        val savedPos = OverlayPrefs.getCollapsedPosition(this)
         val params = WindowManager.LayoutParams(
             48, 48,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
@@ -401,8 +459,8 @@ class OverlayService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = 20
-            y = 200
+            x = savedPos.first
+            y = savedPos.second
         }
 
         collapsedView?.tag = params
@@ -438,6 +496,9 @@ class OverlayService : Service() {
                     true
                 }
                 MotionEvent.ACTION_UP -> {
+                    if (moved) {
+                        OverlayPrefs.saveCollapsedPosition(this@OverlayService, params.x, params.y)
+                    }
                     if (!moved) expandOverlay()
                     true
                 }

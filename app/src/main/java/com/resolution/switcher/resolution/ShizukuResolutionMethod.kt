@@ -1,11 +1,12 @@
 package com.resolution.switcher.resolution
 
+import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 import java.lang.reflect.Method
 
-class ShizukuResolutionMethod : ResolutionController {
+class ShizukuResolutionMethod(private val context: Context) : ResolutionController {
 
     private var newProcessMethod: Method? = null
 
