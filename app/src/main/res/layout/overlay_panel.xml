@@ -101,7 +101,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="8dp">
+                android:layout_marginBottom="14dp">
 
                 <TextView
                     android:id="@+id/btnAR_16_9"
@@ -136,41 +136,8 @@
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
                     android:text="4:3"
-                    android:textColor="#FFFFFFFF"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:background="@drawable/ar_button_bg" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="14dp">
-
-                <TextView
-                    android:id="@+id/btnAR_21_9"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="4dp"
-                    android:text="21:9"
-                    android:textColor="#FFFFFFFF"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:background="@drawable/ar_button_bg" />
-
-                <TextView
-                    android:id="@+id/btnAR_1_1"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:text="1:1"
                     android:textColor="#FFFFFFFF"
                     android:textSize="13sp"
                     android:textStyle="bold"

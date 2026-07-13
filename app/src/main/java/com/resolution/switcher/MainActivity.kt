@@ -242,8 +242,6 @@ class MainActivity : AppCompatActivity() {
         setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_16_9), 16, 9)
         setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_16_10), 16, 10)
         setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_4_3), 4, 3)
-        setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_21_9), 21, 9)
-        setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_1_1), 1, 1)
 
         panelContent.findViewById<TextView>(R.id.btnAR_NATIVE).setOnClickListener {
             preserveAspect = true
