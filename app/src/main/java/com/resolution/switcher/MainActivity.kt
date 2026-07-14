@@ -51,7 +51,6 @@ class MainActivity : AppCompatActivity() {
 
     private var resolutionController: ResolutionController? = null
     private var overlayAlpha = 0.75f
-    private var appMonitor: ForegroundAppMonitor? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -114,7 +113,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnStart.setOnClickListener {
-            startAppMonitor()
             showOverlay()
             Toast.makeText(this, "Оверлей показан!", Toast.LENGTH_SHORT).show()
         }
@@ -123,15 +121,6 @@ class MainActivity : AppCompatActivity() {
         btnGrantUsageStats.setOnClickListener {
             PermissionHelper.requestUsageStatsPermission(this)
         }
-    }
-
-    private fun startAppMonitor() {
-        appMonitor?.stop()
-        appMonitor = ForegroundAppMonitor(
-            context = this,
-            resolutionController = resolutionController
-        )
-        appMonitor?.start()
     }
 
     private fun cleanupStaleOverlays() {
@@ -148,7 +137,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        appMonitor?.stop()
         scope.cancel()
     }
 

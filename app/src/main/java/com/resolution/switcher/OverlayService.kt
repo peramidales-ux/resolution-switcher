@@ -43,30 +43,26 @@ class OverlayService : Service() {
     private lateinit var windowManager: WindowManager
     private lateinit var notificationManager: NotificationManager
     private lateinit var presetStorage: PresetStorage
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private var overlayView: View? = null
     private var collapsedView: View? = null
     private var isCollapsed = false
 
-    private var nativeWidth = 1080
-    private var nativeHeight = 2400
-    private var nativeDensity = 420
-    private var minWidth = 0
-    private var maxWidth = 1080
-    private var minHeight = 0
-    private var maxHeight = 2400
+    private var nativeW = 1080
+    private var nativeH = 2400
+    private var nativeDpi = 420
+    private var minW = 0
+    private var maxW = 2160
+    private var minH = 0
+    private var maxH = 4800
 
     private val handler = Handler(Looper.getMainLooper())
-    private var pendingApplyRunnable: Runnable? = null
-    private val DEBOUNCE_MS = 300L
+    private var pendingApply: Runnable? = null
 
-    private var resolutionController: ResolutionController? = null
-    private var appMonitor: ForegroundAppMonitor? = null
+    private var ctrl: ResolutionController? = null
     private var overlayAlpha = 0.75f
-
-    private var ignoreTextChange = false
-    private var isReady = false
+    private var ignoreText = false
 
     companion object {
         const val CHANNEL_ID = "resolution_switcher"
@@ -81,33 +77,20 @@ class OverlayService : Service() {
             windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
             notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             presetStorage = PresetStorage(this)
-            resolutionController = ResolutionController.create(this)
+            ctrl = ResolutionController.create(this)
             overlayAlpha = OverlayPrefs.getAlpha(this)
 
-            loadNativeResolution()
+            loadNative()
             showOverlay()
-            startAppMonitor()
-
             Toast.makeText(this, "Оверлей запущен!", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
-            e.printStackTrace()
             stopSelf()
         }
     }
 
-    private fun startAppMonitor() {
-        appMonitor?.stop()
-        appMonitor = ForegroundAppMonitor(
-            context = this,
-            resolutionController = resolutionController
-        )
-        appMonitor?.start()
-    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "CLOSE") {
-            appMonitor?.stop()
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
@@ -117,150 +100,38 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        appMonitor?.stop()
-        serviceScope.cancel()
+        scope.cancel()
         removeOverlay()
-        removeCollapsedView()
+        removeCollapsed()
     }
 
-    private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "Resolution Switcher",
-            NotificationManager.IMPORTANCE_LOW
-        ).apply {
-            description = "Уведомление сервиса Resolution Switcher"
-        }
-        notificationManager.createNotificationChannel(channel)
-    }
-
-    private fun createNotification(): Notification {
-        val closeIntent = Intent(this, OverlayService::class.java).apply {
-            action = "CLOSE"
-        }
-        val closePendingIntent = PendingIntent.getService(
-            this, 0, closeIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val openIntent = Intent(this, MainActivity::class.java)
-        val openPendingIntent = PendingIntent.getActivity(
-            this, 0, openIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(this, CHANNEL_ID)
-        } else {
-            @Suppress("DEPRECATION")
-            Notification.Builder(this)
-        }
-
-        return builder
-            .setContentTitle("Resolution Switcher")
-            .setContentText("Нажмите для управления")
-            .setSmallIcon(android.R.drawable.ic_menu_manage)
-            .setContentIntent(openPendingIntent)
-            .addAction(
-                Notification.Action.Builder(
-                    null,
-                    "Закрыть",
-                    closePendingIntent
-                ).build()
-            )
-            .setOngoing(true)
-            .build()
-    }
-
-    private fun loadNativeResolution() {
-        serviceScope.launch {
-            resolutionController?.getNativeResolution()?.let { (w, h) ->
-                nativeWidth = w
-                nativeHeight = h
-                nativeDensity = resolutionController?.getNativeDensity() ?: 420
-            } ?: run {
-                nativeWidth = 1080
-                nativeHeight = 2400
+    private fun loadNative() {
+        scope.launch {
+            val res = ctrl?.getNativeResolution()
+            if (res != null) {
+                nativeW = res.first
+                nativeH = res.second
+                nativeDpi = ctrl?.getNativeDensity() ?: 420
             }
-            computeRanges()
-            isReady = true
-            updateNativeResText()
-            restoreOverlayState()
+            minW = (nativeW * 0.4).toInt()
+            maxW = nativeW * 2
+            minH = (nativeH * 0.4).toInt()
+            maxH = nativeH * 2
+            updateNativeText()
+            restoreValues()
         }
-    }
-
-    private fun computeRanges() {
-        minWidth = (nativeWidth * 0.4).toInt()
-        maxWidth = nativeWidth * 2
-        minHeight = (nativeHeight * 0.4).toInt()
-        maxHeight = nativeHeight * 2
     }
 
     private fun showOverlay() {
-        try {
-            val inflater = LayoutInflater.from(this)
-            overlayView = inflater.inflate(R.layout.overlay_panel, null)
+        val inflater = LayoutInflater.from(this)
+        overlayView = inflater.inflate(R.layout.overlay_panel, null)
 
-            setupOverlayWindow(overlayView!!)
-            setupOverlayListeners(overlayView!!)
-            updateNativeResText()
+        val density = resources.displayMetrics.density
+        val panelWidthPx = (360 * density).toInt()
 
-            val savedRes = OverlayPrefs.getSavedResolution(this)
-            val initW = savedRes?.first ?: nativeWidth
-            val initH = savedRes?.second ?: nativeHeight
-
-            ignoreTextChange = true
-            setWidthValue(initW)
-            setHeightValue(initH)
-            ignoreTextChange = false
-
-            val arPercent = if (nativeWidth > 0) {
-                ((initW.toFloat() / nativeWidth) * 100).toInt().coerceIn(0, 200)
-            } else 100
-
-            overlayView?.findViewById<SeekBar>(R.id.seekAR)?.progress = arPercent
-            overlayView?.findViewById<TextView>(R.id.tvARValue)?.text = "$arPercent%"
-        } catch (e: Exception) {
-            Toast.makeText(this, "Ошибка оверлея: ${e.message}", Toast.LENGTH_LONG).show()
-            e.printStackTrace()
-        }
-    }
-
-    private fun restoreOverlayState() {
-        val savedRes = OverlayPrefs.getSavedResolution(this)
-
-        if (savedRes != null) {
-            val (w, h, _) = savedRes
-            ignoreTextChange = true
-            setWidthValue(w)
-            setHeightValue(h)
-            ignoreTextChange = false
-
-            val arPercent = if (nativeWidth > 0) {
-                ((w.toFloat() / nativeWidth) * 100).toInt().coerceIn(0, 200)
-            } else 100
-
-            overlayView?.post {
-                overlayView?.findViewById<SeekBar>(R.id.seekAR)?.progress = arPercent
-                overlayView?.findViewById<TextView>(R.id.tvARValue)?.text = "$arPercent%"
-            }
-        } else {
-            ignoreTextChange = true
-            setWidthValue(nativeWidth)
-            setHeightValue(nativeHeight)
-            ignoreTextChange = false
-
-            overlayView?.post {
-                overlayView?.findViewById<SeekBar>(R.id.seekAR)?.progress = 100
-                overlayView?.findViewById<TextView>(R.id.tvARValue)?.text = "100%"
-            }
-        }
-    }
-
-    private fun setupOverlayWindow(view: View) {
         val savedPos = OverlayPrefs.getOverlayPosition(this)
         val params = WindowManager.LayoutParams(
-            340,
+            panelWidthPx,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
@@ -271,183 +142,187 @@ class OverlayService : Service() {
             x = savedPos.first
             y = savedPos.second
         }
-        view.tag = params
-        windowManager.addView(view, params)
+        overlayView!!.tag = params
+        windowManager.addView(overlayView, params)
+
+        setupListeners(overlayView!!)
+        updateNativeText()
+
+        val saved = OverlayPrefs.getSavedResolution(this)
+        val initW = saved?.first ?: nativeW
+        val initH = saved?.second ?: nativeH
+        val ar = if (nativeW > 0) ((initW.toFloat() / nativeW) * 100).toInt().coerceIn(0, 200) else 100
+
+        ignoreText = true
+        setWidth(initW)
+        setHeight(initH)
+        ignoreText = false
+        overlayView?.findViewById<SeekBar>(R.id.seekAR)?.progress = ar
+        overlayView?.findViewById<TextView>(R.id.tvARValue)?.text = "$ar%"
     }
 
-    private fun setupOverlayListeners(view: View) {
+    private fun restoreValues() {
+        val saved = OverlayPrefs.getSavedResolution(this)
+        val w = saved?.first ?: nativeW
+        val h = saved?.second ?: nativeH
+        val ar = if (nativeW > 0) ((w.toFloat() / nativeW) * 100).toInt().coerceIn(0, 200) else 100
+
+        ignoreText = true
+        setWidth(w)
+        setHeight(h)
+        ignoreText = false
+        overlayView?.findViewById<SeekBar>(R.id.seekAR)?.progress = ar
+        overlayView?.findViewById<TextView>(R.id.tvARValue)?.text = "$ar%"
+    }
+
+    private fun setupListeners(view: View) {
         val header = view.findViewById<LinearLayout>(R.id.header)
         val btnCollapse = view.findViewById<ImageButton>(R.id.btnCollapse)
-        val seekWidth = view.findViewById<SeekBar>(R.id.seekWidth)
-        val seekHeight = view.findViewById<SeekBar>(R.id.seekHeight)
+        val seekW = view.findViewById<SeekBar>(R.id.seekWidth)
+        val seekH = view.findViewById<SeekBar>(R.id.seekHeight)
         val seekAR = view.findViewById<SeekBar>(R.id.seekAR)
-        val tvARValue = view.findViewById<TextView>(R.id.tvARValue)
-        val etWidth = view.findViewById<EditText>(R.id.etWidth)
-        val etHeight = view.findViewById<EditText>(R.id.etHeight)
+        val tvAR = view.findViewById<TextView>(R.id.tvARValue)
+        val etW = view.findViewById<EditText>(R.id.etWidth)
+        val etH = view.findViewById<EditText>(R.id.etHeight)
         val btnReset = view.findViewById<Button>(R.id.btnReset)
-        val btnSavePreset = view.findViewById<Button>(R.id.btnSavePreset)
+        val btnSave = view.findViewById<Button>(R.id.btnSavePreset)
         val chipGroup = view.findViewById<ChipGroup>(R.id.chipGroupPresets)
 
         setupDrag(header, view)
-
         btnCollapse.setOnClickListener { collapseOverlay() }
 
         seekAR.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser && isReady) {
-                    val scale = progress / 100f
-                    val newW = (nativeWidth * scale).toInt().coerceIn(minWidth, maxWidth)
-                    val newH = (nativeHeight * scale).toInt().coerceIn(minHeight, maxHeight)
-                    ignoreTextChange = true
-                    setWidthValue(newW)
-                    setHeightValue(newH)
-                    ignoreTextChange = false
-                    tvARValue.text = "$progress%"
-                    applyResolution(newW, newH)
-                } else {
-                    tvARValue.text = "$progress%"
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                tvAR.text = "$progress%"
+                if (fromUser) {
+                    val s = progress / 100f
+                    val nw = (nativeW * s).toInt().coerceIn(minW, maxW)
+                    val nh = (nativeH * s).toInt().coerceIn(minH, maxH)
+                    ignoreText = true
+                    setWidth(nw)
+                    setHeight(nh)
+                    ignoreText = false
+                    applyRes(nw, nh)
                 }
             }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
         })
 
-        seekWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser && isReady) {
-                    val width = progressToValue(progress, minWidth, maxWidth)
-                    ignoreTextChange = true
-                    etWidth.setText(width.toString())
-                    ignoreTextChange = false
-                    applyResolution(width, getCurrentHeight())
+        seekW.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    val w = progressToVal(progress, minW, maxW)
+                    ignoreText = true
+                    etW.setText(w.toString())
+                    ignoreText = false
+                    applyRes(w, getCurH())
                 }
             }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
         })
 
-        seekHeight.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser && isReady) {
-                    val height = progressToValue(progress, minHeight, maxHeight)
-                    ignoreTextChange = true
-                    etHeight.setText(height.toString())
-                    ignoreTextChange = false
-                    applyResolution(getCurrentWidth(), height)
+        seekH.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    val h = progressToVal(progress, minH, maxH)
+                    ignoreText = true
+                    etH.setText(h.toString())
+                    ignoreText = false
+                    applyRes(getCurW(), h)
                 }
             }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
         })
 
-        etWidth.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        etW.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
+            override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
             override fun afterTextChanged(s: Editable?) {
-                if (ignoreTextChange || !isReady) return
-                val value = s?.toString()?.toIntOrNull() ?: return
-                if (value in minWidth..maxWidth) {
-                    seekWidth.progress = valueToProgress(value, minWidth, maxWidth)
-                    applyResolution(value, getCurrentHeight())
+                if (ignoreText) return
+                val v = s?.toString()?.toIntOrNull() ?: return
+                if (v in minW..maxW) {
+                    seekW.progress = valToProgress(v, minW, maxW)
+                    applyRes(v, getCurH())
                 }
             }
         })
 
-        etHeight.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        etH.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
+            override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
             override fun afterTextChanged(s: Editable?) {
-                if (ignoreTextChange || !isReady) return
-                val value = s?.toString()?.toIntOrNull() ?: return
-                if (value in minHeight..maxHeight) {
-                    seekHeight.progress = valueToProgress(value, minHeight, maxHeight)
-                    applyResolution(getCurrentWidth(), value)
+                if (ignoreText) return
+                val v = s?.toString()?.toIntOrNull() ?: return
+                if (v in minH..maxH) {
+                    seekH.progress = valToProgress(v, minH, maxH)
+                    applyRes(getCurW(), v)
                 }
             }
         })
 
         btnReset.setOnClickListener {
-            pendingApplyRunnable?.let { handler.removeCallbacks(it) }
-            pendingApplyRunnable = null
+            handler.removeCallbacksAndMessages(null)
+            pendingApply = null
 
-            OverlayPrefs.clearSavedResolution(this)
+            OverlayPrefs.clearSavedResolution(this@OverlayService)
+            OverlayPrefs.saveARPosition(this@OverlayService, 100)
 
-            resolutionController?.let { ctrl ->
-                serviceScope.launch {
-                    ctrl.resetResolution()
-                    ctrl.resetDensity()
-                }
+            scope.launch {
+                ctrl?.resetResolution()
+                ctrl?.resetDensity()
             }
 
-            ignoreTextChange = true
-            setWidthValue(nativeWidth)
-            setHeightValue(nativeHeight)
-            ignoreTextChange = false
-
+            ignoreText = true
+            setWidth(nativeW)
+            setHeight(nativeH)
+            ignoreText = false
             seekAR.progress = 100
-            tvARValue.text = "100%"
+            tvAR.text = "100%"
 
-            OverlayPrefs.saveResolution(this, nativeWidth, nativeHeight, nativeDensity)
-
-            Toast.makeText(this, "Сброшено к заводским", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Сброшено", Toast.LENGTH_SHORT).show()
         }
 
-        btnSavePreset.setOnClickListener { showSavePresetDialog() }
+        btnSave.setOnClickListener { showSaveDialog() }
         loadPresets(chipGroup)
     }
 
-    private fun applyResolution(width: Int, height: Int) {
-        OverlayPrefs.saveResolution(this, width, height,
-            (nativeDensity * maxOf(width.toFloat() / nativeWidth, height.toFloat() / nativeHeight)).toInt().coerceAtLeast(1))
+    private fun applyRes(w: Int, h: Int) {
+        val dpi = (nativeDpi * maxOf(w.toFloat() / nativeW, h.toFloat() / nativeH)).toInt().coerceAtLeast(1)
+        OverlayPrefs.saveResolution(this, w, h, dpi)
 
-        pendingApplyRunnable?.let { handler.removeCallbacks(it) }
-
-        pendingApplyRunnable = Runnable {
-            serviceScope.launch {
-                val scale = maxOf(width.toFloat() / nativeWidth, height.toFloat() / nativeHeight)
-                val dpi = (nativeDensity * scale).toInt().coerceAtLeast(1)
-                resolutionController?.setResolution(width, height)
-                resolutionController?.setDensity(dpi)
+        pendingApply?.let { handler.removeCallbacks(it) }
+        pendingApply = Runnable {
+            scope.launch {
+                ctrl?.setResolution(w, h)
+                ctrl?.setDensity(dpi)
             }
         }
-        handler.postDelayed(pendingApplyRunnable!!, DEBOUNCE_MS)
+        handler.postDelayed(pendingApply!!, 300)
     }
 
     private fun setupDrag(header: View, view: View) {
-        var initialX = 0
-        var initialY = 0
-        var initialTouchX = 0f
-        var initialTouchY = 0f
-        var moved = false
-        var startDownY = 0f
-
-        header.setOnTouchListener { _, event ->
-            val params = view.tag as WindowManager.LayoutParams
-            when (event.action) {
+        var ix = 0; var iy = 0; var tx = 0f; var ty = 0f; var moved = false; var startY = 0f
+        header.setOnTouchListener { _, e ->
+            val p = view.tag as WindowManager.LayoutParams
+            when (e.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    initialX = params.x
-                    initialY = params.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
-                    startDownY = event.rawY
-                    moved = false
-                    true
+                    ix = p.x; iy = p.y; tx = e.rawX; ty = e.rawY; startY = e.rawY; moved = false; true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    val dx = event.rawX - initialTouchX
-                    val dy = event.rawY - initialTouchY
-                    if (dx * dx + dy * dy > 100) moved = true
-                    params.x = initialX + dx.toInt()
-                    params.y = initialY + dy.toInt()
-                    windowManager.updateViewLayout(view, params)
+                    val dx = e.rawX - tx; val dy = e.rawY - ty
+                    if (dx*dx + dy*dy > 100) moved = true
+                    p.x = ix + dx.toInt(); p.y = iy + dy.toInt()
+                    windowManager.updateViewLayout(view, p)
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    val totalDy = event.rawY - startDownY
-                    if (totalDy > 200 && !moved) {
+                    if (e.rawY - startY > 200 && !moved) {
                         collapseOverlay()
                     } else if (moved) {
-                        OverlayPrefs.saveOverlayPosition(this@OverlayService, params.x, params.y)
+                        OverlayPrefs.saveOverlayPosition(this@OverlayService, p.x, p.y)
                     }
                     true
                 }
@@ -456,120 +331,79 @@ class OverlayService : Service() {
         }
     }
 
-    private fun getCurrentWidth(): Int =
-        overlayView?.findViewById<EditText>(R.id.etWidth)
-            ?.text?.toString()?.toIntOrNull() ?: nativeWidth
+    private fun getCurW(): Int = overlayView?.findViewById<EditText>(R.id.etWidth)?.text?.toString()?.toIntOrNull() ?: nativeW
+    private fun getCurH(): Int = overlayView?.findViewById<EditText>(R.id.etHeight)?.text?.toString()?.toIntOrNull() ?: nativeH
 
-    private fun getCurrentHeight(): Int =
-        overlayView?.findViewById<EditText>(R.id.etHeight)
-            ?.text?.toString()?.toIntOrNull() ?: nativeHeight
-
-    private fun setWidthValue(value: Int) {
-        overlayView?.let { view ->
-            view.findViewById<SeekBar>(R.id.seekWidth)?.progress =
-                valueToProgress(value, minWidth, maxWidth)
-            view.findViewById<EditText>(R.id.etWidth)?.setText(value.toString())
+    private fun setWidth(v: Int) {
+        overlayView?.let {
+            it.findViewById<SeekBar>(R.id.seekWidth)?.progress = valToProgress(v, minW, maxW)
+            it.findViewById<EditText>(R.id.etWidth)?.setText(v.toString())
         }
     }
 
-    private fun setHeightValue(value: Int) {
-        overlayView?.let { view ->
-            view.findViewById<SeekBar>(R.id.seekHeight)?.progress =
-                valueToProgress(value, minHeight, maxHeight)
-            view.findViewById<EditText>(R.id.etHeight)?.setText(value.toString())
+    private fun setHeight(v: Int) {
+        overlayView?.let {
+            it.findViewById<SeekBar>(R.id.seekHeight)?.progress = valToProgress(v, minH, maxH)
+            it.findViewById<EditText>(R.id.etHeight)?.setText(v.toString())
         }
     }
 
-    private fun progressToValue(progress: Int, min: Int, max: Int): Int =
-        min + ((max - min) * progress / 100)
-
-    private fun valueToProgress(value: Int, min: Int, max: Int): Int {
+    private fun progressToVal(p: Int, min: Int, max: Int) = min + ((max - min) * p / 100)
+    private fun valToProgress(v: Int, min: Int, max: Int): Int {
         if (max == min) return 0
-        return ((value - min) * 100 / (max - min)).coerceIn(0, 100)
+        return ((v - min) * 100 / (max - min)).coerceIn(0, 100)
     }
 
-    private fun updateNativeResText() {
-        overlayView?.findViewById<TextView>(R.id.tvNativeRes)?.text =
-            "Заводское: ${nativeWidth}x${nativeHeight}"
+    private fun updateNativeText() {
+        overlayView?.findViewById<TextView>(R.id.tvNativeRes)?.text = "Заводское: ${nativeW}x${nativeH}"
     }
 
     private fun collapseOverlay() {
         overlayView?.let {
-            val params = it.tag as? WindowManager.LayoutParams
-            if (params != null) {
-                OverlayPrefs.saveOverlayPosition(this, params.x, params.y)
-            }
+            val p = it.tag as? WindowManager.LayoutParams
+            if (p != null) OverlayPrefs.saveOverlayPosition(this, p.x, p.y)
         }
         removeOverlay()
-        showCollapsedTab()
+        showCollapsed()
         isCollapsed = true
     }
 
     private fun expandOverlay() {
         collapsedView?.let {
-            val params = it.tag as? WindowManager.LayoutParams
-            if (params != null) {
-                OverlayPrefs.saveCollapsedPosition(this, params.x, params.y)
-            }
+            val p = it.tag as? WindowManager.LayoutParams
+            if (p != null) OverlayPrefs.saveCollapsedPosition(this, p.x, p.y)
         }
-        removeCollapsedView()
+        removeCollapsed()
         showOverlay()
         isCollapsed = false
     }
 
-    private fun showCollapsedTab() {
-        collapsedView = View(this).apply {
-            setBackgroundColor(0xFF1976D2.toInt())
-        }
-
-        val savedPos = OverlayPrefs.getCollapsedPosition(this)
-        val params = WindowManager.LayoutParams(
-            48, 48,
+    private fun showCollapsed() {
+        collapsedView = View(this).apply { setBackgroundColor(0xFF1976D2.toInt()) }
+        val sp = OverlayPrefs.getCollapsedPosition(this)
+        val p = WindowManager.LayoutParams(48, 48,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = savedPos.first
-            y = savedPos.second
-        }
-
-        collapsedView?.tag = params
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSLUCENT
+        ).apply { gravity = Gravity.TOP or Gravity.START; x = sp.first; y = sp.second }
+        collapsedView?.tag = p
         collapsedView?.setOnClickListener { expandOverlay() }
-        setupDragCollapsed(collapsedView!!, params)
-        windowManager.addView(collapsedView, params)
+        setupDragSmall(collapsedView!!, p)
+        windowManager.addView(collapsedView, p)
     }
 
-    private fun setupDragCollapsed(view: View, params: WindowManager.LayoutParams) {
-        var initialX = 0
-        var initialY = 0
-        var initialTouchX = 0f
-        var initialTouchY = 0f
-        var moved = false
-
-        view.setOnTouchListener { _, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    initialX = params.x
-                    initialY = params.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
-                    moved = false
-                    true
-                }
+    private fun setupDragSmall(view: View, params: WindowManager.LayoutParams) {
+        var ix = 0; var iy = 0; var tx = 0f; var ty = 0f; var moved = false
+        view.setOnTouchListener { _, e ->
+            when (e.action) {
+                MotionEvent.ACTION_DOWN -> { ix = params.x; iy = params.y; tx = e.rawX; ty = e.rawY; moved = false; true }
                 MotionEvent.ACTION_MOVE -> {
-                    val dx = event.rawX - initialTouchX
-                    val dy = event.rawY - initialTouchY
-                    if (dx * dx + dy * dy > 100) moved = true
-                    params.x = initialX + dx.toInt()
-                    params.y = initialY + dy.toInt()
-                    windowManager.updateViewLayout(view, params)
-                    true
+                    val dx = e.rawX - tx; val dy = e.rawY - ty
+                    if (dx*dx + dy*dy > 100) moved = true
+                    params.x = ix + dx.toInt(); params.y = iy + dy.toInt()
+                    windowManager.updateViewLayout(view, params); true
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (moved) {
-                        OverlayPrefs.saveCollapsedPosition(this@OverlayService, params.x, params.y)
-                    }
+                    if (moved) OverlayPrefs.saveCollapsedPosition(this@OverlayService, params.x, params.y)
                     if (!moved) expandOverlay()
                     true
                 }
@@ -578,64 +412,38 @@ class OverlayService : Service() {
         }
     }
 
-    private fun removeOverlay() {
-        overlayView?.let {
-            try { windowManager.removeView(it) } catch (_: Exception) {}
-        }
-        overlayView = null
-    }
+    private fun removeOverlay() { overlayView?.let { try { windowManager.removeView(it) } catch (_: Exception) {} }; overlayView = null }
+    private fun removeCollapsed() { collapsedView?.let { try { windowManager.removeView(it) } catch (_: Exception) {} }; collapsedView = null }
 
-    private fun removeCollapsedView() {
-        collapsedView?.let {
-            try { windowManager.removeView(it) } catch (_: Exception) {}
-        }
-        collapsedView = null
-    }
-
-    private fun showSavePresetDialog() {
-        val width = getCurrentWidth()
-        val height = getCurrentHeight()
-
-        val builder = android.app.AlertDialog.Builder(this, R.style.Theme_ResolutionSwitcher)
-        builder.setTitle("Сохранить пресет")
-
-        val input = EditText(this).apply {
-            hint = "Название пресета"
-            setPadding(48, 32, 48, 16)
-        }
-        builder.setView(input)
-
-        builder.setPositiveButton(android.R.string.ok) { _, _ ->
+    private fun showSaveDialog() {
+        val w = getCurW(); val h = getCurH()
+        val b = android.app.AlertDialog.Builder(this, R.style.Theme_ResolutionSwitcher)
+        b.setTitle("Сохранить пресет")
+        val input = EditText(this).apply { hint = "Название"; setPadding(48, 32, 48, 16) }
+        b.setView(input)
+        b.setPositiveButton(android.R.string.ok) { _, _ ->
             val name = input.text.toString().trim()
             if (name.isNotEmpty()) {
-                presetStorage.save(Preset(name = name, width = width, height = height))
+                presetStorage.save(Preset(name = name, width = w, height = h))
                 overlayView?.let { loadPresets(it.findViewById(R.id.chipGroupPresets)) }
             }
         }
-        builder.setNegativeButton(android.R.string.cancel, null)
-        builder.show()
+        b.setNegativeButton(android.R.string.cancel, null)
+        b.show()
     }
 
-    private fun loadPresets(chipGroup: ChipGroup) {
-        chipGroup.removeAllViews()
-        presetStorage.getAll().forEach { preset ->
-            val chip = Chip(this).apply {
-                text = "${preset.name}\n${preset.width}x${preset.height}"
-                isCheckable = false
-                isCloseIconVisible = true
+    private fun loadPresets(cg: ChipGroup) {
+        cg.removeAllViews()
+        presetStorage.getAll().forEach { p ->
+            cg.addView(Chip(this).apply {
+                text = "${p.name}\n${p.width}x${p.height}"
+                isCheckable = false; isCloseIconVisible = true
                 setOnClickListener {
-                    ignoreTextChange = true
-                    setWidthValue(preset.width)
-                    setHeightValue(preset.height)
-                    ignoreTextChange = false
-                    applyResolution(preset.width, preset.height)
+                    ignoreText = true; setWidth(p.width); setHeight(p.height); ignoreText = false
+                    applyRes(p.width, p.height)
                 }
-                setOnCloseIconClickListener {
-                    presetStorage.delete(preset.id)
-                    chipGroup.removeView(this)
-                }
-            }
-            chipGroup.addView(chip)
+                setOnCloseIconClickListener { presetStorage.delete(p.id); cg.removeView(this) }
+            })
         }
     }
 }
