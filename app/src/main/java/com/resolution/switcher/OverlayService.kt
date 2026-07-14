@@ -178,22 +178,14 @@ class OverlayService : Service() {
                 nativeWidth = w
                 nativeHeight = h
                 nativeDensity = resolutionController?.getNativeDensity() ?: 420
-                computeRanges()
-                isReady = true
-                overlayView?.post {
-                    updateNativeResText()
-                    restoreOverlayState()
-                }
             } ?: run {
                 nativeWidth = 1080
                 nativeHeight = 2400
-                computeRanges()
-                isReady = true
-                overlayView?.post {
-                    updateNativeResText()
-                    restoreOverlayState()
-                }
             }
+            computeRanges()
+            isReady = true
+            updateNativeResText()
+            restoreOverlayState()
         }
     }
 
@@ -213,9 +205,21 @@ class OverlayService : Service() {
             setupOverlayListeners(overlayView!!)
             updateNativeResText()
 
-            if (isReady) {
-                restoreOverlayState()
-            }
+            val savedRes = OverlayPrefs.getSavedResolution(this)
+            val initW = savedRes?.first ?: nativeWidth
+            val initH = savedRes?.second ?: nativeHeight
+
+            ignoreTextChange = true
+            setWidthValue(initW)
+            setHeightValue(initH)
+            ignoreTextChange = false
+
+            val arPercent = if (nativeWidth > 0) {
+                ((initW.toFloat() / nativeWidth) * 100).toInt().coerceIn(0, 200)
+            } else 100
+
+            overlayView?.findViewById<SeekBar>(R.id.seekAR)?.progress = arPercent
+            overlayView?.findViewById<TextView>(R.id.tvARValue)?.text = "$arPercent%"
         } catch (e: Exception) {
             Toast.makeText(this, "Ошибка оверлея: ${e.message}", Toast.LENGTH_LONG).show()
             e.printStackTrace()
