@@ -57,4 +57,12 @@ object OverlayPrefs {
     fun clearSavedResolution(context: Context) {
         prefs(context).edit().putBoolean("has_saved_resolution", false).apply()
     }
+
+    fun saveARPosition(context: Context, position: Int) {
+        prefs(context).edit().putInt("ar_slider_position", position).apply()
+    }
+
+    fun getARPosition(context: Context): Int {
+        return prefs(context).getInt("ar_slider_position", 100)
+    }
 }

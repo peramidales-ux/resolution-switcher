@@ -101,61 +101,29 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
+                android:gravity="center_vertical"
                 android:layout_marginBottom="14dp">
 
-                <TextView
-                    android:id="@+id/btnAR_16_9"
+                <SeekBar
+                    android:id="@+id/seekAR"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginEnd="4dp"
-                    android:text="16:9"
-                    android:textColor="#FFFFFFFF"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:background="@drawable/ar_button_bg" />
+                    android:max="100"
+                    android:progress="100"
+                    android:progressTint="#FF03DAC5"
+                    android:thumbTint="#FF03DAC5" />
 
                 <TextView
-                    android:id="@+id/btnAR_16_10"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:text="16:10"
-                    android:textColor="#FFFFFFFF"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:background="@drawable/ar_button_bg" />
-
-                <TextView
-                    android:id="@+id/btnAR_4_3"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:text="4:3"
-                    android:textColor="#FFFFFFFF"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:background="@drawable/ar_button_bg" />
-
-                <TextView
-                    android:id="@+id/btnAR_NATIVE"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:text="СБРОС"
+                    android:id="@+id/tvARValue"
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="100%"
                     android:textColor="#FF03DAC5"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textStyle="bold"
-                    android:gravity="center"
-                    android:background="@drawable/ar_button_reset_bg" />
+                    android:gravity="center" />
             </LinearLayout>
 
             <!-- Width -->

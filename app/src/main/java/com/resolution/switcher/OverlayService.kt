@@ -65,6 +65,7 @@ class OverlayService : Service() {
     private var resolutionController: ResolutionController? = null
     private var appMonitor: ForegroundAppMonitor? = null
     private var overlayAlpha = 0.75f
+    private var isOnLauncher = true
 
     companion object {
         const val CHANNEL_ID = "resolution_switcher"
@@ -98,7 +99,13 @@ class OverlayService : Service() {
         appMonitor?.stop()
         appMonitor = ForegroundAppMonitor(
             context = this,
-            resolutionController = resolutionController
+            resolutionController = resolutionController,
+            onForegroundChanged = { isLauncher ->
+                isOnLauncher = isLauncher
+                overlayView?.post {
+                    setSlidersEnabled(!isLauncher)
+                }
+            }
         )
         appMonitor?.start()
     }
@@ -202,6 +209,13 @@ class OverlayService : Service() {
             setupOverlayListeners(overlayView!!)
             updateNativeResText()
 
+            val savedAR = OverlayPrefs.getARPosition(this)
+            overlayView?.post {
+                overlayView?.findViewById<SeekBar>(R.id.seekAR)?.progress = savedAR
+                overlayView?.findViewById<TextView>(R.id.tvARValue)?.text = "$savedAR%"
+                setSlidersEnabled(!isOnLauncher)
+            }
+
             serviceScope.launch {
                 resolutionController?.getCurrentResolution()?.let { (w, h) ->
                     overlayView?.post {
@@ -239,6 +253,8 @@ class OverlayService : Service() {
         val btnCollapse = view.findViewById<ImageButton>(R.id.btnCollapse)
         val seekWidth = view.findViewById<SeekBar>(R.id.seekWidth)
         val seekHeight = view.findViewById<SeekBar>(R.id.seekHeight)
+        val seekAR = view.findViewById<SeekBar>(R.id.seekAR)
+        val tvARValue = view.findViewById<TextView>(R.id.tvARValue)
         val etWidth = view.findViewById<EditText>(R.id.etWidth)
         val etHeight = view.findViewById<EditText>(R.id.etHeight)
         val btnReset = view.findViewById<Button>(R.id.btnReset)
@@ -248,6 +264,25 @@ class OverlayService : Service() {
         setupDrag(header, view)
 
         btnCollapse.setOnClickListener { collapseOverlay() }
+
+        seekAR.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser && !isOnLauncher) {
+                    val scale = progress / 100f
+                    val newW = (nativeWidth * scale).toInt().coerceIn(minWidth, maxWidth)
+                    val newH = (nativeHeight * scale).toInt().coerceIn(minHeight, maxHeight)
+                    setWidthValue(newW)
+                    setHeightValue(newH)
+                    tvARValue.text = "$progress%"
+                    OverlayPrefs.saveARPosition(this@OverlayService, progress)
+                    debouncedSetWidth(newW)
+                } else if (!fromUser) {
+                    tvARValue.text = "$progress%"
+                }
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
 
         seekWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -299,12 +334,15 @@ class OverlayService : Service() {
 
         btnReset.setOnClickListener {
             OverlayPrefs.clearSavedResolution(this)
+            OverlayPrefs.saveARPosition(this, 100)
             serviceScope.launch {
                 resolutionController?.resetResolution()
                 resolutionController?.resetDensity()
                 overlayView?.post {
                     setWidthValue(nativeWidth)
                     setHeightValue(nativeHeight)
+                    seekAR.progress = 100
+                    tvARValue.text = "100%"
                 }
             }
         }
@@ -406,6 +444,24 @@ class OverlayService : Service() {
             view.findViewById<SeekBar>(R.id.seekHeight)?.progress =
                 valueToProgress(value, minHeight, maxHeight)
             view.findViewById<EditText>(R.id.etHeight)?.setText(value.toString())
+        }
+    }
+
+    private fun setSlidersEnabled(enabled: Boolean) {
+        overlayView?.let { view ->
+            val alpha = if (enabled) 1.0f else 0.3f
+            listOf(R.id.seekWidth, R.id.seekHeight, R.id.seekAR).forEach { id ->
+                view.findViewById<SeekBar>(id)?.let {
+                    it.isEnabled = enabled
+                    it.alpha = alpha
+                }
+            }
+            listOf(R.id.etWidth, R.id.etHeight).forEach { id ->
+                view.findViewById<EditText>(id)?.let {
+                    it.isEnabled = enabled
+                    it.alpha = alpha
+                }
+            }
         }
     }
 
