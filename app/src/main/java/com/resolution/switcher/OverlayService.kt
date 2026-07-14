@@ -58,6 +58,7 @@ class OverlayService : Service() {
 
     private var ctrl: ResolutionController? = null
     private var ignoreText = false
+    private var foregroundMonitor: ForegroundAppMonitor? = null
 
     companion object {
         const val CHANNEL_ID = "resolution_switcher"
@@ -75,6 +76,10 @@ class OverlayService : Service() {
 
             loadNative()
             showOverlay()
+
+            foregroundMonitor = ForegroundAppMonitor(this, ctrl)
+            foregroundMonitor?.start()
+
             Toast.makeText(this, "Оверлей запущен!", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
@@ -84,8 +89,17 @@ class OverlayService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "CLOSE") {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
+            foregroundMonitor?.stop()
+            Thread {
+                try {
+                    val p1 = Runtime.getRuntime().exec(arrayOf("su", "-c", "wm size reset"))
+                    p1.waitFor()
+                    val p2 = Runtime.getRuntime().exec(arrayOf("su", "-c", "wm density reset"))
+                    p2.waitFor()
+                } catch (_: Exception) {}
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+            }.start()
             return START_NOT_STICKY
         }
         return START_STICKY
@@ -93,10 +107,19 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        foregroundMonitor?.stop()
         pendingApply?.let { handler.removeCallbacks(it) }
-        scope.cancel()
         removeOverlay()
         removeCollapsed()
+        Thread {
+            try {
+                val p1 = Runtime.getRuntime().exec(arrayOf("su", "-c", "wm size reset"))
+                p1.waitFor()
+                val p2 = Runtime.getRuntime().exec(arrayOf("su", "-c", "wm density reset"))
+                p2.waitFor()
+            } catch (_: Exception) {}
+        }.start()
+        scope.cancel()
     }
 
     private fun loadNative() {
