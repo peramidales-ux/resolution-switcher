@@ -249,60 +249,16 @@
             </LinearLayout>
 
             <!-- Buttons -->
-            <LinearLayout
+            <Button
+                android:id="@+id/btnReset"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="16dp">
-
-                <Button
-                    android:id="@+id/btnReset"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:text="СБРОС"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:textAllCaps="false"
-                    android:background="@drawable/btn_reset_bg" />
-
-                <Button
-                    android:id="@+id/btnSavePreset"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp"
-                    android:text="СОХРАНИТЬ"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:textAllCaps="false"
-                    android:background="@drawable/btn_save_bg" />
-            </LinearLayout>
-
-            <!-- Presets -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ПРЕСЕТЫ"
-                android:textColor="#88FFFFFF"
-                android:textSize="10sp"
-                android:letterSpacing="0.12"
+                android:layout_height="44dp"
+                android:text="СБРОС"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textAllCaps="false"
                 android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp" />
-
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:scrollbars="none">
-
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chipGroupPresets"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-            </HorizontalScrollView>
-
-        </LinearLayout>
+                android:background="@drawable/btn_reset_bg" />
 
     </LinearLayout>
 </FrameLayout>

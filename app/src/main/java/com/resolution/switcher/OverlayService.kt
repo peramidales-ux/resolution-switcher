@@ -26,10 +26,6 @@ import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
-import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
-import com.resolution.switcher.presets.Preset
-import com.resolution.switcher.presets.PresetStorage
 import com.resolution.switcher.resolution.ResolutionController
 import com.resolution.switcher.util.OverlayPrefs
 import kotlinx.coroutines.CoroutineScope
@@ -42,7 +38,6 @@ class OverlayService : Service() {
 
     private lateinit var windowManager: WindowManager
     private lateinit var notificationManager: NotificationManager
-    private lateinit var presetStorage: PresetStorage
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private var overlayView: View? = null
@@ -61,7 +56,6 @@ class OverlayService : Service() {
     private var pendingApply: Runnable? = null
 
     private var ctrl: ResolutionController? = null
-    private var overlayAlpha = 0.75f
     private var ignoreText = false
 
     companion object {
@@ -76,9 +70,7 @@ class OverlayService : Service() {
         try {
             windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
             notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            presetStorage = PresetStorage(this)
             ctrl = ResolutionController.create(this)
-            overlayAlpha = OverlayPrefs.getAlpha(this)
 
             loadNative()
             showOverlay()
@@ -126,12 +118,9 @@ class OverlayService : Service() {
         val inflater = LayoutInflater.from(this)
         overlayView = inflater.inflate(R.layout.overlay_panel, null)
 
-        val density = resources.displayMetrics.density
-        val panelWidthPx = (360 * density).toInt()
-
         val savedPos = OverlayPrefs.getOverlayPosition(this)
         val params = WindowManager.LayoutParams(
-            panelWidthPx,
+            WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
@@ -185,8 +174,6 @@ class OverlayService : Service() {
         val etW = view.findViewById<EditText>(R.id.etWidth)
         val etH = view.findViewById<EditText>(R.id.etHeight)
         val btnReset = view.findViewById<Button>(R.id.btnReset)
-        val btnSave = view.findViewById<Button>(R.id.btnSavePreset)
-        val chipGroup = view.findViewById<ChipGroup>(R.id.chipGroupPresets)
 
         setupDrag(header, view)
         btnCollapse.setOnClickListener { collapseOverlay() }
@@ -266,33 +253,25 @@ class OverlayService : Service() {
         btnReset.setOnClickListener {
             handler.removeCallbacksAndMessages(null)
             pendingApply = null
-
             OverlayPrefs.clearSavedResolution(this@OverlayService)
             OverlayPrefs.saveARPosition(this@OverlayService, 100)
-
             scope.launch {
                 ctrl?.resetResolution()
                 ctrl?.resetDensity()
             }
-
             ignoreText = true
             setWidth(nativeW)
             setHeight(nativeH)
             ignoreText = false
             seekAR.progress = 100
             tvAR.text = "100%"
-
             Toast.makeText(this, "Сброшено", Toast.LENGTH_SHORT).show()
         }
-
-        btnSave.setOnClickListener { showSaveDialog() }
-        loadPresets(chipGroup)
     }
 
     private fun applyRes(w: Int, h: Int) {
         val dpi = (nativeDpi * maxOf(w.toFloat() / nativeW, h.toFloat() / nativeH)).toInt().coerceAtLeast(1)
         OverlayPrefs.saveResolution(this, w, h, dpi)
-
         pendingApply?.let { handler.removeCallbacks(it) }
         pendingApply = Runnable {
             scope.launch {
@@ -319,11 +298,8 @@ class OverlayService : Service() {
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (e.rawY - startY > 200 && !moved) {
-                        collapseOverlay()
-                    } else if (moved) {
-                        OverlayPrefs.saveOverlayPosition(this@OverlayService, p.x, p.y)
-                    }
+                    if (e.rawY - startY > 200 && !moved) collapseOverlay()
+                    else if (moved) OverlayPrefs.saveOverlayPosition(this@OverlayService, p.x, p.y)
                     true
                 }
                 else -> false
@@ -414,36 +390,4 @@ class OverlayService : Service() {
 
     private fun removeOverlay() { overlayView?.let { try { windowManager.removeView(it) } catch (_: Exception) {} }; overlayView = null }
     private fun removeCollapsed() { collapsedView?.let { try { windowManager.removeView(it) } catch (_: Exception) {} }; collapsedView = null }
-
-    private fun showSaveDialog() {
-        val w = getCurW(); val h = getCurH()
-        val b = android.app.AlertDialog.Builder(this, R.style.Theme_ResolutionSwitcher)
-        b.setTitle("Сохранить пресет")
-        val input = EditText(this).apply { hint = "Название"; setPadding(48, 32, 48, 16) }
-        b.setView(input)
-        b.setPositiveButton(android.R.string.ok) { _, _ ->
-            val name = input.text.toString().trim()
-            if (name.isNotEmpty()) {
-                presetStorage.save(Preset(name = name, width = w, height = h))
-                overlayView?.let { loadPresets(it.findViewById(R.id.chipGroupPresets)) }
-            }
-        }
-        b.setNegativeButton(android.R.string.cancel, null)
-        b.show()
-    }
-
-    private fun loadPresets(cg: ChipGroup) {
-        cg.removeAllViews()
-        presetStorage.getAll().forEach { p ->
-            cg.addView(Chip(this).apply {
-                text = "${p.name}\n${p.width}x${p.height}"
-                isCheckable = false; isCloseIconVisible = true
-                setOnClickListener {
-                    ignoreText = true; setWidth(p.width); setHeight(p.height); ignoreText = false
-                    applyRes(p.width, p.height)
-                }
-                setOnCloseIconClickListener { presetStorage.delete(p.id); cg.removeView(this) }
-            })
-        }
-    }
 }

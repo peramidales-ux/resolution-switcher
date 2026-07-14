@@ -19,10 +19,6 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
-import com.resolution.switcher.presets.Preset
-import com.resolution.switcher.presets.PresetStorage
 import com.resolution.switcher.resolution.ResolutionController
 import com.resolution.switcher.util.OverlayPrefs
 import com.resolution.switcher.util.PermissionHelper
@@ -35,7 +31,6 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private lateinit var windowManager: WindowManager
-    private lateinit var presetStorage: PresetStorage
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private var overlayView: View? = null
@@ -57,7 +52,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        presetStorage = PresetStorage(this)
         overlayAlpha = OverlayPrefs.getAlpha(this)
 
         cleanupStaleOverlays()
@@ -116,11 +110,6 @@ class MainActivity : AppCompatActivity() {
             showOverlay()
             Toast.makeText(this, "Оверлей показан!", Toast.LENGTH_SHORT).show()
         }
-
-        val btnGrantUsageStats = findViewById<Button>(R.id.btnGrantUsageStats)
-        btnGrantUsageStats.setOnClickListener {
-            PermissionHelper.requestUsageStatsPermission(this)
-        }
     }
 
     private fun cleanupStaleOverlays() {
@@ -172,13 +161,6 @@ class MainActivity : AppCompatActivity() {
         val method = PermissionHelper.getAccessMethod(this)
         val canStart = hasOverlay && (method == "root" || method == "shizuku")
         findViewById<Button>(R.id.btnStart).isEnabled = canStart
-
-        val hasUsageStats = PermissionHelper.hasUsageStatsPermission(this)
-        findViewById<TextView>(R.id.usageStatsStatus).apply {
-            text = if (hasUsageStats) "Разрешение получено" else "Для смены разрешения только в приложениях"
-            setTextColor(getColor(if (hasUsageStats) R.color.status_green else R.color.on_surface_variant))
-        }
-        findViewById<Button>(R.id.btnGrantUsageStats).isEnabled = !hasUsageStats
     }
 
     private fun showOverlay() {
@@ -228,8 +210,6 @@ class MainActivity : AppCompatActivity() {
         val seekTransparency = panelContent.findViewById<SeekBar>(R.id.seekTransparency)
         val tvTransparency = panelContent.findViewById<TextView>(R.id.tvTransparency)
         val btnReset = panelContent.findViewById<Button>(R.id.btnReset)
-        val btnSavePreset = panelContent.findViewById<Button>(R.id.btnSavePreset)
-        val chipGroup = panelContent.findViewById<ChipGroup>(R.id.chipGroupPresets)
 
         setupDrag(header, panelContent)
         btnCollapse.setOnClickListener { collapseOverlay() }
@@ -348,28 +328,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        btnSavePreset.setOnClickListener {
-            val w = getCurrentWidth()
-            val h = getCurrentHeight()
-            val builder = android.app.AlertDialog.Builder(this, R.style.Theme_ResolutionSwitcher)
-            builder.setTitle("Сохранить пресет")
-            val input = EditText(this).apply {
-                hint = "Название"
-                setPadding(48, 32, 48, 16)
-            }
-            builder.setView(input)
-            builder.setPositiveButton(android.R.string.ok) { _, _ ->
-                val name = input.text.toString().trim()
-                if (name.isNotEmpty()) {
-                    presetStorage.save(Preset(name = name, width = w, height = h))
-                    loadPresets(chipGroup)
-                }
-            }
-            builder.setNegativeButton(android.R.string.cancel, null)
-            builder.show()
-        }
-
-        loadPresets(chipGroup)
     }
 
     private fun setupAspectRatioButton(button: TextView, ratioW: Int, ratioH: Int) {
@@ -585,23 +543,5 @@ class MainActivity : AppCompatActivity() {
             }
         }
         handler.postDelayed(pendingW!!, 200)
-    }
-
-    private fun loadPresets(chipGroup: ChipGroup) {
-        chipGroup.removeAllViews()
-        presetStorage.getAll().forEach { preset ->
-            val chip = Chip(this).apply {
-                text = "${preset.name}\n${preset.width}x${preset.height}"
-                isCheckable = false; isCloseIconVisible = true
-                setOnClickListener {
-                    setWidthValue(preset.width); setHeightValue(preset.height)
-                    debouncedSet(preset.width, preset.height)
-                }
-                setOnCloseIconClickListener {
-                    presetStorage.delete(preset.id); chipGroup.removeView(this)
-                }
-            }
-            chipGroup.addView(chip)
-        }
     }
 }
