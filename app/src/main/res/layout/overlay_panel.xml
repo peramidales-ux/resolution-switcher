@@ -260,5 +260,7 @@
                 android:layout_marginTop="16dp"
                 android:background="@drawable/btn_reset_bg" />
 
+        </LinearLayout>
+
     </LinearLayout>
 </FrameLayout>
