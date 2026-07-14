@@ -266,17 +266,31 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar?) {}
         })
 
-        // Aspect ratio buttons
-        setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_16_9), 16, 9)
-        setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_16_10), 16, 10)
-        setupAspectRatioButton(panelContent.findViewById(R.id.btnAR_4_3), 4, 3)
+        val seekAR = panelContent.findViewById<SeekBar>(R.id.seekAR)
+        val tvARValue = panelContent.findViewById<TextView>(R.id.tvARValue)
 
-        panelContent.findViewById<TextView>(R.id.btnAR_NATIVE).setOnClickListener {
-            preserveAspect = true
-            setWidthValue(nativeWidth)
-            setHeightValue(nativeHeight)
-            debouncedSet(nativeWidth, nativeHeight)
-        }
+        seekAR.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    val scale = p / 100f
+                    val newW = (nativeWidth * scale).toInt().coerceIn(minWidth, maxWidth)
+                    val newH = (nativeHeight * scale).toInt().coerceIn(minHeight, maxHeight)
+                    setWidthValue(newW)
+                    setHeightValue(newH)
+                    tvARValue.text = "$p%"
+                    OverlayPrefs.saveARPosition(this@MainActivity, p)
+                    debouncedSet(newW, newH)
+                } else {
+                    tvARValue.text = "$p%"
+                }
+            }
+            override fun onStartTrackingTouch(s: SeekBar?) {}
+            override fun onStopTrackingTouch(s: SeekBar?) {}
+        })
+
+        val savedAR = OverlayPrefs.getARPosition(this)
+        seekAR.progress = savedAR
+        tvARValue.text = "$savedAR%"
 
         seekWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
@@ -331,12 +345,15 @@ class MainActivity : AppCompatActivity() {
         btnReset.setOnClickListener {
             preserveAspect = true
             OverlayPrefs.clearSavedResolution(this)
+            OverlayPrefs.saveARPosition(this, 100)
             scope.launch {
                 resolutionController?.resetResolution()
                 resolutionController?.resetDensity()
                 overlayView?.post {
                     setWidthValue(nativeWidth)
                     setHeightValue(nativeHeight)
+                    seekAR.progress = 100
+                    tvARValue.text = "100%"
                 }
             }
         }
