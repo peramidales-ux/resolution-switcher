@@ -27,10 +27,22 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Generate release keystore
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
+
+    - name: Build Release APK
+      run: ./gradlew assembleRelease
+
+    - name: Sign Release APK
       run: |
+        # Zipalign
+        ${ANDROID_HOME}/build-tools/35.0.0/zipalign -f 4 \
+          app/build/outputs/apk/release/app-release-unsigned.apk \
+          app/build/outputs/apk/release/app-release-aligned.apk
+
+        # Generate keystore
         keytool -genkeypair -v \
-          -keystore app/release.keystore \
+          -keystore /tmp/release.keystore \
           -alias releasekey \
           -keyalg RSA \
           -keysize 2048 \
@@ -39,16 +51,14 @@ jobs:
           -keypass android \
           -dname "CN=Release,O=Laenfaer,C=US"
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
-
-    - name: Build Release APK
-      env:
-        KEYSTORE_PATH: app/release.keystore
-        KEYSTORE_PASSWORD: android
-        KEY_ALIAS: releasekey
-        KEY_PASSWORD: android
-      run: ./gradlew assembleRelease
+        # Sign
+        ${ANDROID_HOME}/build-tools/35.0.0/apksigner sign \
+          --ks /tmp/release.keystore \
+          --ks-key-alias releasekey \
+          --ks-pass pass:android \
+          --key-pass pass:android \
+          --out app/build/outputs/apk/release/app-release.apk \
+          app/build/outputs/apk/release/app-release-aligned.apk
 
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
