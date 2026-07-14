@@ -325,6 +325,8 @@ class OverlayService : Service() {
         })
 
         btnReset.setOnClickListener {
+            pendingWidthRunnable?.let { handler.removeCallbacks(it) }
+            pendingHeightRunnable?.let { handler.removeCallbacks(it) }
             OverlayPrefs.clearSavedResolution(this)
             OverlayPrefs.saveARPosition(this, 100)
             serviceScope.launch {
@@ -335,6 +337,7 @@ class OverlayService : Service() {
                     setHeightValue(nativeHeight)
                     seekAR.progress = 100
                     tvARValue.text = "100%"
+                    Toast.makeText(this@OverlayService, "Сброшено к заводским", Toast.LENGTH_SHORT).show()
                 }
             }
         }

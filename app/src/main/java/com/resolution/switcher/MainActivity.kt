@@ -343,6 +343,7 @@ class MainActivity : AppCompatActivity() {
         })
 
         btnReset.setOnClickListener {
+            pendingW?.let { handler.removeCallbacks(it) }
             preserveAspect = true
             OverlayPrefs.clearSavedResolution(this)
             OverlayPrefs.saveARPosition(this, 100)
@@ -354,6 +355,7 @@ class MainActivity : AppCompatActivity() {
                     setHeightValue(nativeHeight)
                     seekAR.progress = 100
                     tvARValue.text = "100%"
+                    Toast.makeText(this@MainActivity, "Сброшено к заводским", Toast.LENGTH_SHORT).show()
                 }
             }
         }
