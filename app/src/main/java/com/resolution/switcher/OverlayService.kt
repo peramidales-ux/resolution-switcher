@@ -65,7 +65,6 @@ class OverlayService : Service() {
     private var resolutionController: ResolutionController? = null
     private var appMonitor: ForegroundAppMonitor? = null
     private var overlayAlpha = 0.75f
-    private var isOnLauncher = true
 
     companion object {
         const val CHANNEL_ID = "resolution_switcher"
@@ -99,13 +98,7 @@ class OverlayService : Service() {
         appMonitor?.stop()
         appMonitor = ForegroundAppMonitor(
             context = this,
-            resolutionController = resolutionController,
-            onForegroundChanged = { isLauncher ->
-                isOnLauncher = isLauncher
-                overlayView?.post {
-                    setSlidersEnabled(!isLauncher)
-                }
-            }
+            resolutionController = resolutionController
         )
         appMonitor?.start()
     }
@@ -213,7 +206,6 @@ class OverlayService : Service() {
             overlayView?.post {
                 overlayView?.findViewById<SeekBar>(R.id.seekAR)?.progress = savedAR
                 overlayView?.findViewById<TextView>(R.id.tvARValue)?.text = "$savedAR%"
-                setSlidersEnabled(!isOnLauncher)
             }
 
             serviceScope.launch {
@@ -267,7 +259,7 @@ class OverlayService : Service() {
 
         seekAR.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser && !isOnLauncher) {
+                if (fromUser) {
                     val scale = progress / 100f
                     val newW = (nativeWidth * scale).toInt().coerceIn(minWidth, maxWidth)
                     val newH = (nativeHeight * scale).toInt().coerceIn(minHeight, maxHeight)
@@ -276,7 +268,7 @@ class OverlayService : Service() {
                     tvARValue.text = "$progress%"
                     OverlayPrefs.saveARPosition(this@OverlayService, progress)
                     debouncedSetWidth(newW)
-                } else if (!fromUser) {
+                } else {
                     tvARValue.text = "$progress%"
                 }
             }
@@ -444,24 +436,6 @@ class OverlayService : Service() {
             view.findViewById<SeekBar>(R.id.seekHeight)?.progress =
                 valueToProgress(value, minHeight, maxHeight)
             view.findViewById<EditText>(R.id.etHeight)?.setText(value.toString())
-        }
-    }
-
-    private fun setSlidersEnabled(enabled: Boolean) {
-        overlayView?.let { view ->
-            val alpha = if (enabled) 1.0f else 0.3f
-            listOf(R.id.seekWidth, R.id.seekHeight, R.id.seekAR).forEach { id ->
-                view.findViewById<SeekBar>(id)?.let {
-                    it.isEnabled = enabled
-                    it.alpha = alpha
-                }
-            }
-            listOf(R.id.etWidth, R.id.etHeight).forEach { id ->
-                view.findViewById<EditText>(id)?.let {
-                    it.isEnabled = enabled
-                    it.alpha = alpha
-                }
-            }
         }
     }
 

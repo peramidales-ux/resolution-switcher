@@ -17,8 +17,7 @@ class ForegroundAppMonitor(
     private val context: Context,
     private val resolutionController: ResolutionController?,
     private val onResolutionApplied: (() -> Unit)? = null,
-    private val onResolutionReset: (() -> Unit)? = null,
-    private val onForegroundChanged: ((isLauncher: Boolean) -> Unit)? = null
+    private val onResolutionReset: (() -> Unit)? = null
 ) {
 
     private val handler = Handler(Looper.getMainLooper())
@@ -56,11 +55,9 @@ class ForegroundAppMonitor(
         if (!isLauncher && !lastWasApp) {
             applySavedResolution()
             lastWasApp = true
-            onForegroundChanged?.invoke(false)
         } else if (isLauncher && lastWasApp) {
             resetResolution()
             lastWasApp = false
-            onForegroundChanged?.invoke(true)
         }
     }
 
