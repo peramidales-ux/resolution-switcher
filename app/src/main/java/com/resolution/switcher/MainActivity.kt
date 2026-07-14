@@ -526,8 +526,8 @@ class MainActivity : AppCompatActivity() {
         scope.launch {
             resolutionController?.getNativeResolution()?.let { (w, h) ->
                 nativeWidth = w; nativeHeight = h
-                minWidth = (w * 0.4).toInt(); maxWidth = w
-                minHeight = (h * 0.4).toInt(); maxHeight = h
+                minWidth = (w * 0.4).toInt(); maxWidth = w * 2
+                minHeight = (h * 0.4).toInt(); maxHeight = h * 2
                 overlayView?.post {
                     overlayView?.findViewById<TextView>(R.id.tvNativeRes)?.text = "Заводское: ${w}x${h}"
                 }

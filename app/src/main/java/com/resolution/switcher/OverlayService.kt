@@ -188,9 +188,9 @@ class OverlayService : Service() {
 
     private fun computeRanges() {
         minWidth = (nativeWidth * 0.4).toInt()
-        maxWidth = nativeWidth
+        maxWidth = nativeWidth * 2
         minHeight = (nativeHeight * 0.4).toInt()
-        maxHeight = nativeHeight
+        maxHeight = nativeHeight * 2
     }
 
     private fun showOverlay() {
@@ -203,16 +203,23 @@ class OverlayService : Service() {
             updateNativeResText()
 
             val savedAR = OverlayPrefs.getARPosition(this)
+            val savedRes = OverlayPrefs.getSavedResolution(this)
             overlayView?.post {
                 overlayView?.findViewById<SeekBar>(R.id.seekAR)?.progress = savedAR
                 overlayView?.findViewById<TextView>(R.id.tvARValue)?.text = "$savedAR%"
+                if (savedRes != null) {
+                    setWidthValue(savedRes.first)
+                    setHeightValue(savedRes.second)
+                }
             }
 
-            serviceScope.launch {
-                resolutionController?.getCurrentResolution()?.let { (w, h) ->
-                    overlayView?.post {
-                        setWidthValue(w)
-                        setHeightValue(h)
+            if (savedRes == null) {
+                serviceScope.launch {
+                    resolutionController?.getCurrentResolution()?.let { (w, h) ->
+                        overlayView?.post {
+                            setWidthValue(w)
+                            setHeightValue(h)
+                        }
                     }
                 }
             }
