@@ -7,12 +7,18 @@ import kotlinx.coroutines.withContext
 class RootResolutionMethod(private val context: Context) : ResolutionController {
 
     override suspend fun setResolution(width: Int, height: Int): Boolean = withContext(Dispatchers.IO) {
+        // 1) SurfaceFlinger — реальное разрешение дисплея (влияет на OpenGL/Vulkan игры)
+        setDisplayModeSF(width, height)
+        // 2) wm size — оконный менеджер (для обычных приложений)
         executeCommand("wm size ${width}x${height}")
         executeCommand("settings put system display_size_forced ${width}x${height}")
         true
     }
 
     override suspend fun resetResolution(): Boolean = withContext(Dispatchers.IO) {
+        // Сброс SurfaceFlinger
+        resetDisplayModeSF()
+        // Сброс wm size
         executeCommand("wm size reset")
         executeCommand("settings delete system display_size_forced")
         true
@@ -39,6 +45,41 @@ class RootResolutionMethod(private val context: Context) : ResolutionController 
 
     override suspend fun resetDensity(): Boolean = withContext(Dispatchers.IO) {
         executeCommand("wm density reset")
+    }
+
+    /**
+     * SurfaceFlinger transaction 1013 — setActiveDisplayModeWithConstraints.
+     * Меняет реальное разрешение framebuffer. Влияет на ВСЁ, включая OpenGL/Vulkan игры.
+     * Формат: service call SurfaceFlinger 1013 i32 {width} i32 {height} i32 {fpsNumerator} i32 {fpsDenominator}
+     */
+    private fun setDisplayModeSF(width: Int, height: Int): Boolean {
+        val native = getNativeResolution() ?: return false
+        val fps = getRefreshRate() ?: 60
+        // Пробуем разные коды транзакций (зависят от устройства/версии Android)
+        for (txCode in listOf(1013, 1024, 1035)) {
+            val cmd = "service call SurfaceFlinger $txCode " +
+                    "i32 $width i32 $height i32 $fps i32 1"
+            if (executeCommand(cmd)) return true
+        }
+        return false
+    }
+
+    private fun resetDisplayModeSF(): Boolean {
+        val native = getNativeResolution() ?: return false
+        val fps = getRefreshRate() ?: 60
+        for (txCode in listOf(1013, 1024, 1035)) {
+            val cmd = "service call SurfaceFlinger $txCode " +
+                    "i32 ${native.first} i32 ${native.second} i32 $fps i32 1"
+            if (executeCommand(cmd)) return true
+        }
+        return false
+    }
+
+    private fun getRefreshRate(): Int? {
+        val output = executeCommandWithOutput("dumpsys SurfaceFlinger --display-id") ?: return null
+        // Ищем текущий refresh rate
+        val match = Regex("refreshRate:\\s*(\\d+)").find(output)
+        return match?.groupValues?.get(1)?.toIntOrNull()
     }
 
     private fun executeCommand(command: String): Boolean {
