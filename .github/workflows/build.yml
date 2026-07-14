@@ -30,7 +30,7 @@ jobs:
     - name: Generate release keystore
       run: |
         keytool -genkeypair -v \
-          -keystore release.keystore \
+          -keystore app/release.keystore \
           -alias releasekey \
           -keyalg RSA \
           -keysize 2048 \
@@ -44,7 +44,7 @@ jobs:
 
     - name: Build Release APK
       env:
-        KEYSTORE_PATH: release.keystore
+        KEYSTORE_PATH: app/release.keystore
         KEYSTORE_PASSWORD: android
         KEY_ALIAS: releasekey
         KEY_PASSWORD: android
