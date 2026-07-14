@@ -54,6 +54,7 @@ class OverlayService : Service() {
 
     private val handler = Handler(Looper.getMainLooper())
     private var pendingApply: Runnable? = null
+    private var isApplying = false
 
     private var ctrl: ResolutionController? = null
     private var ignoreText = false
@@ -92,6 +93,7 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        pendingApply?.let { handler.removeCallbacks(it) }
         scope.cancel()
         removeOverlay()
         removeCollapsed()
@@ -181,7 +183,7 @@ class OverlayService : Service() {
         seekAR.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
                 tvAR.text = "$progress%"
-                if (fromUser) {
+                if (fromUser && !isApplying) {
                     val s = progress / 100f
                     val nw = (nativeW * s).toInt().coerceIn(minW, maxW)
                     val nh = (nativeH * s).toInt().coerceIn(minH, maxH)
@@ -198,7 +200,7 @@ class OverlayService : Service() {
 
         seekW.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
+                if (fromUser && !isApplying) {
                     val w = progressToVal(progress, minW, maxW)
                     ignoreText = true
                     etW.setText(w.toString())
@@ -212,7 +214,7 @@ class OverlayService : Service() {
 
         seekH.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
+                if (fromUser && !isApplying) {
                     val h = progressToVal(progress, minH, maxH)
                     ignoreText = true
                     etH.setText(h.toString())
@@ -228,7 +230,7 @@ class OverlayService : Service() {
             override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
             override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
             override fun afterTextChanged(s: Editable?) {
-                if (ignoreText) return
+                if (ignoreText || isApplying) return
                 val v = s?.toString()?.toIntOrNull() ?: return
                 if (v in minW..maxW) {
                     seekW.progress = valToProgress(v, minW, maxW)
@@ -241,7 +243,7 @@ class OverlayService : Service() {
             override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
             override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
             override fun afterTextChanged(s: Editable?) {
-                if (ignoreText) return
+                if (ignoreText || isApplying) return
                 val v = s?.toString()?.toIntOrNull() ?: return
                 if (v in minH..maxH) {
                     seekH.progress = valToProgress(v, minH, maxH)
@@ -251,28 +253,43 @@ class OverlayService : Service() {
         })
 
         btnReset.setOnClickListener {
-            handler.removeCallbacksAndMessages(null)
+            pendingApply?.let { handler.removeCallbacks(it) }
             pendingApply = null
+            isApplying = true
+
             OverlayPrefs.clearSavedResolution(this@OverlayService)
-            OverlayPrefs.saveARPosition(this@OverlayService, 100)
+
+            val resetW = nativeW
+            val resetH = nativeH
+            val resetDpi = nativeDpi
+
             scope.launch {
                 ctrl?.resetResolution()
                 ctrl?.resetDensity()
+                OverlayPrefs.saveResolution(this@OverlayService, resetW, resetH, resetDpi)
+                isApplying = false
+
+                overlayView?.post {
+                    ignoreText = true
+                    setWidth(resetW)
+                    setHeight(resetH)
+                    ignoreText = false
+                    seekAR.progress = 100
+                    tvAR.text = "100%"
+                    Toast.makeText(this@OverlayService, "Сброшено", Toast.LENGTH_SHORT).show()
+                }
             }
-            ignoreText = true
-            setWidth(nativeW)
-            setHeight(nativeH)
-            ignoreText = false
-            seekAR.progress = 100
-            tvAR.text = "100%"
-            Toast.makeText(this, "Сброшено", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun applyRes(w: Int, h: Int) {
+        if (isApplying) return
+
         val dpi = (nativeDpi * maxOf(w.toFloat() / nativeW, h.toFloat() / nativeH)).toInt().coerceAtLeast(1)
         OverlayPrefs.saveResolution(this, w, h, dpi)
+
         pendingApply?.let { handler.removeCallbacks(it) }
+
         pendingApply = Runnable {
             scope.launch {
                 ctrl?.setResolution(w, h)

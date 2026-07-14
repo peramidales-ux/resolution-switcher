@@ -24,14 +24,12 @@ class ShizukuResolutionMethod(private val context: Context) : ResolutionControll
     }
 
     override suspend fun setResolution(width: Int, height: Int): Boolean = withContext(Dispatchers.IO) {
-        executeCommand("wm overscan 0,0,0,0")
         executeCommand("wm size ${width}x${height}")
         executeCommand("settings put system display_size_forced ${width}x${height}")
         true
     }
 
     override suspend fun resetResolution(): Boolean = withContext(Dispatchers.IO) {
-        executeCommand("wm overscan reset")
         executeCommand("wm size reset")
         executeCommand("settings delete system display_size_forced")
         true

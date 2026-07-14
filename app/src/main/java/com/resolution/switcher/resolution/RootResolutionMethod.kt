@@ -1,21 +1,18 @@
 package com.resolution.switcher.resolution
 
 import android.content.Context
-import com.resolution.switcher.util.OverlayPrefs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class RootResolutionMethod(private val context: Context) : ResolutionController {
 
     override suspend fun setResolution(width: Int, height: Int): Boolean = withContext(Dispatchers.IO) {
-        executeCommand("wm overscan 0,0,0,0")
         executeCommand("wm size ${width}x${height}")
         executeCommand("settings put system display_size_forced ${width}x${height}")
         true
     }
 
     override suspend fun resetResolution(): Boolean = withContext(Dispatchers.IO) {
-        executeCommand("wm overscan reset")
         executeCommand("wm size reset")
         executeCommand("settings delete system display_size_forced")
         true
